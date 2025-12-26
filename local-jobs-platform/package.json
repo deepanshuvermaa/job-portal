@@ -1,0 +1,51 @@
+{
+  "name": "local-jobs-platform",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "start": "vite preview --host 0.0.0.0 --port $PORT"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@react-google-maps/api": "^2.20.8",
+    "@tanstack/react-query": "^5.90.12",
+    "axios": "^1.13.2",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.561.0",
+    "pdfjs-dist": "^5.4.449",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-dropzone": "^14.3.8",
+    "react-hook-form": "^7.68.0",
+    "react-router-dom": "^7.10.1",
+    "react-toastify": "^11.0.5",
+    "recharts": "^3.6.0",
+    "tailwind-merge": "^3.4.0",
+    "tesseract.js": "^7.0.0",
+    "zod": "^4.2.1",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.4",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
+}

@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /auth/
+Allow: /employer/signup
+Allow: /worker/signup
+
+Disallow: /admin/
+Disallow: /api/
+
+Sitemap: https://example.com/sitemap.xml
