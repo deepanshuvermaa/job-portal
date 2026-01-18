@@ -20,6 +20,8 @@ import { EmployerJobApplications } from './pages/EmployerJobApplications';
 import { WorkerApplications } from './pages/WorkerApplications';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminLogin } from './pages/AdminLogin';
+import { Login } from './pages/Login';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { Notifications } from './pages/Notifications';
 import { NotFound } from './pages/NotFound';
 
@@ -59,7 +61,9 @@ const App: React.FC = () => {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/language" element={<LanguageSelection />} />
+      <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/phone" element={<PhoneAuth />} />
+      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/role-select" element={<RoleSelection />} />
 
       <Route path="/employer/signup" element={<EmployerSignup />} />

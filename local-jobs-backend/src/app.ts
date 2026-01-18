@@ -438,6 +438,60 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   }
 });
 
+// Forgot Password - Reset via OTP
+app.post('/api/auth/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { phone, otp, newPassword } = req.body;
+
+    if (!phone || !otp || !newPassword) {
+      return ApiResponseUtil.error(res, 'Missing required fields');
+    }
+
+    // Verify OTP
+    const otpHash = hashOTP(otp);
+    const { data: otpData } = await supabase
+      .from('otp_verifications')
+      .select('*')
+      .eq('phone', phone)
+      .eq('otp_hash', otpHash)
+      .eq('is_verified', false)
+      .eq('purpose', 'password_reset')
+      .single();
+
+    if (!otpData || new Date(otpData.expires_at) < new Date()) {
+      return ApiResponseUtil.error(res, 'Invalid or expired OTP');
+    }
+
+    // Mark OTP as verified
+    await supabase
+      .from('otp_verifications')
+      .update({ is_verified: true })
+      .eq('id', otpData.id);
+
+    // Get user
+    const { data: user } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+
+    if (!user) {
+      return ApiResponseUtil.error(res, 'User not found');
+    }
+
+    // Update password via Supabase Auth
+    const { error } = await supabase.auth.admin.updateUserById(user.id, {
+      password: newPassword
+    });
+
+    if (error) throw error;
+
+    return ApiResponseUtil.success(res, { message: 'Password reset successfully' });
+  } catch (error: any) {
+    return ApiResponseUtil.error(res, error.message || 'Password reset failed');
+  }
+});
+
 // Admin Login
 app.post('/api/auth/admin/login', async (req: Request, res: Response) => {
   try {
