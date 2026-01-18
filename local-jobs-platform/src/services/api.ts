@@ -3,11 +3,16 @@ import axios from 'axios';
 // PRODUCTION MODE - Connected to Railway backend
 export const MOCK_MODE = false;
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-const API_FALLBACK = 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://job-portal-production-7fb3.up.railway.app';
+
+console.log('=== API Configuration ===');
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('MOCK_MODE:', MOCK_MODE);
+console.log('========================');
 
 export const api = axios.create({
-  baseURL: API_BASE_URL || API_FALLBACK,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -42,4 +47,4 @@ api.interceptors.response.use(
   }
 );
 
-export const API_BASE = API_BASE_URL || API_FALLBACK;
+export const API_BASE = API_BASE_URL;
