@@ -15,8 +15,17 @@ import { SMSService } from './services/sms.service';
 import { UploadService } from './services/upload.service';
 import { OCRService } from './services/ocr.service';
 import { NotificationService } from './services/notification.service';
+import { initializeFirebase } from './services/firebase.service';
+import firebaseAuthRouter from './routes/firebase-auth';
 
 const app: Express = express();
+
+// Initialize Firebase
+try {
+  initializeFirebase();
+} catch (error) {
+  console.warn('⚠️ Firebase initialization failed. Firebase auth will not be available.');
+}
 
 // Middleware
 app.use(helmet());
@@ -43,6 +52,9 @@ app.get('/health', (req: Request, res: Response) => {
 // ===================
 // AUTH ROUTES
 // ===================
+
+// Firebase Authentication
+app.use('/api/firebase-auth', firebaseAuthRouter);
 
 // Send OTP
 app.post('/api/auth/send-otp', async (req: Request, res: Response) => {

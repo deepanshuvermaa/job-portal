@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/appStore';
 import { useAuthStore } from '../store/authStore';
@@ -8,9 +8,8 @@ import { Input } from '../components/shared/Input';
 import { Card } from '../components/shared/Card';
 import { Phone, ArrowLeft } from 'lucide-react';
 import { isValidPhone } from '../utils/helpers';
-import { sendOtp, verifyOtp } from '../services/auth';
-import { MOCK_MODE } from '../services/api';
-import { MOCK_OTP_CODE } from '../services/mockStore';
+import { sendFirebaseOTP, verifyFirebaseOTP, initializeRecaptcha } from '../services/firebase-auth';
+import { api } from '../services/api';
 
 export const PhoneAuth: React.FC = () => {
   const navigate = useNavigate();
@@ -23,7 +22,11 @@ export const PhoneAuth: React.FC = () => {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [devOtp, setDevOtp] = useState<string | null>(null);
+
+  // Initialize reCAPTCHA on mount
+  useEffect(() => {
+    initializeRecaptcha('recaptcha-container');
+  }, []);
 
   const handleSendOtp = async () => {
     setError('');
@@ -35,22 +38,11 @@ export const PhoneAuth: React.FC = () => {
 
     setLoading(true);
     try {
-      // In MOCK_MODE, show OTP immediately without backend call
-      if (MOCK_MODE) {
-        setDevOtp(MOCK_OTP_CODE);
-        setStep('otp');
-        setLoading(false);
-        return;
-      }
-
-      const response = await sendOtp(phone, 'registration');
-      // Store OTP if returned in dev mode
-      if (response?.otp) {
-        setDevOtp(response.otp);
-      }
+      // Send OTP via Firebase
+      await sendFirebaseOTP(phone);
       setStep('otp');
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to send OTP');
+      setError(err.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
@@ -59,38 +51,6 @@ export const PhoneAuth: React.FC = () => {
   const handleVerifyOtp = async () => {
     setError('');
 
-    // In MOCK_MODE, still call verifyOtp to check if user exists
-    if (MOCK_MODE) {
-      setLoading(true);
-      try {
-        const result = await verifyOtp(phone, otp, 'registration');
-
-        if (result.signupRequired) {
-          setPendingPhone(phone);
-          navigate('/auth/role-select');
-          return;
-        }
-
-        if (result.tokens?.accessToken && result.user) {
-          setToken(result.tokens.accessToken, result.tokens.refreshToken);
-          login(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-
-          if (result.user.role === 'employer') {
-            navigate('/employer/dashboard');
-          } else if (result.user.role === 'worker') {
-            navigate('/worker/dashboard');
-          } else {
-            navigate('/admin/dashboard');
-          }
-        }
-      } catch (err: any) {
-        setError(err?.response?.data?.error || t('auth.invalidOTP'));
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
     if (otp.length !== 6) {
       setError(t('auth.invalidOTP'));
       return;
@@ -98,28 +58,32 @@ export const PhoneAuth: React.FC = () => {
 
     setLoading(true);
     try {
-      const result = await verifyOtp(phone, otp, 'registration');
+      // 1. Verify OTP with Firebase and get ID token
+      const firebaseToken = await verifyFirebaseOTP(otp);
 
-      if (result.signupRequired) {
+      // 2. Send Firebase token to backend for verification and user creation/login
+      const { data } = await api.post('/api/firebase-auth/verify', {
+        firebaseToken
+      });
+
+      // 3. Handle response
+      if (data.isNewUser) {
         setPendingPhone(phone);
         navigate('/auth/role-select');
-        return;
-      }
+      } else {
+        setToken(data.tokens.accessToken, data.tokens.refreshToken);
+        login(data.user, data.tokens.accessToken, data.tokens.refreshToken);
 
-      if (result.tokens?.accessToken && result.user) {
-        setToken(result.tokens.accessToken, result.tokens.refreshToken);
-        login(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-
-        if (result.user.role === 'employer') {
+        if (data.user.role === 'employer') {
           navigate('/employer/dashboard');
-        } else if (result.user.role === 'worker') {
+        } else if (data.user.role === 'worker') {
           navigate('/worker/dashboard');
         } else {
           navigate('/admin/dashboard');
         }
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || t('auth.invalidOTP'));
+      setError(err.message || t('auth.invalidOTP'));
     } finally {
       setLoading(false);
     }
@@ -137,6 +101,7 @@ export const PhoneAuth: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-primary-100">
+      <div id="recaptcha-container"></div>
       <Card className="max-w-md w-full">
         <button
           onClick={handleBack}
@@ -179,20 +144,13 @@ export const PhoneAuth: React.FC = () => {
             </Button>
 
             <div className="text-center text-sm text-gray-500">
-              <p>{MOCK_MODE ? `Mock OTP: ${MOCK_OTP_CODE}` : 'OTP will be sent via SMS'}</p>
-              {!MOCK_MODE && <p className="text-xs mt-1">In dev, check server logs</p>}
+              <p>OTP will be sent via SMS</p>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
             <div className="text-center text-sm text-gray-600 mb-4">
               <p>OTP sent to: {phone}</p>
-              {(MOCK_MODE || devOtp) && (
-                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 font-semibold">Development OTP: {MOCK_MODE ? MOCK_OTP_CODE : devOtp}</p>
-                  <p className="text-xs text-green-600 mt-1">Use this OTP for testing</p>
-                </div>
-              )}
             </div>
 
             <Input
