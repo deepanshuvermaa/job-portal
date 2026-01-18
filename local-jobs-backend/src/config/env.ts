@@ -27,6 +27,9 @@ interface EnvConfig {
   BREVO_API_KEY: string;
   EMAIL_FROM: string;
 
+  FIREBASE_PROJECT_ID: string;
+  FIREBASE_SERVICE_ACCOUNT: string;
+
   ADMIN_PASSWORD: string;
 
   RATE_LIMIT_WINDOW_MS: number;
@@ -65,6 +68,9 @@ export const config: EnvConfig = {
 
   BREVO_API_KEY: getEnv('BREVO_API_KEY', 'not-configured'),
   EMAIL_FROM: getEnv('EMAIL_FROM', 'noreply@yourplatform.com'),
+
+  FIREBASE_PROJECT_ID: getEnv('FIREBASE_PROJECT_ID', 'not-configured'),
+  FIREBASE_SERVICE_ACCOUNT: getEnv('FIREBASE_SERVICE_ACCOUNT', '{}'),
 
   ADMIN_PASSWORD: getEnv('ADMIN_PASSWORD', 'admin123'),
 
