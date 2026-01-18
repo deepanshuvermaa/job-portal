@@ -5,7 +5,12 @@
       "Bash(npm run dev:*)",
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Local Job Portal Platform\n\nFeatures:\n- Frontend: React + TypeScript + Vite + Tailwind CSS\n- Backend: Node.js + Express + TypeScript + Supabase\n- MOCK mode for testing (localStorage-based)\n- Phone OTP authentication\n- Worker & Employer registration flows\n- Admin dashboard with job approval system\n- Modern animated landing page with custom cursor\n- Bilingual support (English/Hindi)\n- Job posting and application system\n- Profile management for workers and employers\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

@@ -59,11 +59,11 @@ export const config: EnvConfig = {
   CLOUDINARY_API_KEY: getEnv('CLOUDINARY_API_KEY'),
   CLOUDINARY_API_SECRET: getEnv('CLOUDINARY_API_SECRET'),
 
-  MSG91_AUTH_KEY: getEnv('MSG91_AUTH_KEY'),
+  MSG91_AUTH_KEY: getEnv('MSG91_AUTH_KEY', 'not-configured'),
   MSG91_SENDER_ID: getEnv('MSG91_SENDER_ID', 'JOBAPP'),
-  MSG91_TEMPLATE_ID: getEnv('MSG91_TEMPLATE_ID'),
+  MSG91_TEMPLATE_ID: getEnv('MSG91_TEMPLATE_ID', 'not-configured'),
 
-  BREVO_API_KEY: getEnv('BREVO_API_KEY'),
+  BREVO_API_KEY: getEnv('BREVO_API_KEY', 'not-configured'),
   EMAIL_FROM: getEnv('EMAIL_FROM', 'noreply@yourplatform.com'),
 
   ADMIN_PASSWORD: getEnv('ADMIN_PASSWORD', 'admin123'),
