@@ -12,7 +12,25 @@ let confirmationResult: ConfirmationResult | null = null;
 
 // Initialize reCAPTCHA
 export const initializeRecaptcha = (elementId: string) => {
-  if (!recaptchaVerifier) {
+  try {
+    // Check if element exists
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.error(`Element with id '${elementId}' not found`);
+      return null;
+    }
+
+    // Clear existing verifier if it exists
+    if (recaptchaVerifier) {
+      try {
+        recaptchaVerifier.clear();
+      } catch (e) {
+        console.warn('Error clearing existing reCAPTCHA:', e);
+      }
+      recaptchaVerifier = null;
+    }
+
+    // Create new verifier
     recaptchaVerifier = new RecaptchaVerifier(auth, elementId, {
       'size': 'invisible',
       'callback': () => {
@@ -22,8 +40,13 @@ export const initializeRecaptcha = (elementId: string) => {
         console.log('reCAPTCHA expired');
       }
     });
+
+    console.log('✅ reCAPTCHA initialized successfully');
+    return recaptchaVerifier;
+  } catch (error) {
+    console.error('❌ Failed to initialize reCAPTCHA:', error);
+    return null;
   }
-  return recaptchaVerifier;
 };
 
 // Send OTP via Firebase
@@ -31,17 +54,34 @@ export const sendFirebaseOTP = async (phoneNumber: string): Promise<void> => {
   try {
     // Ensure phone number has country code
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-    
+
     // Initialize reCAPTCHA if not already done
     if (!recaptchaVerifier) {
-      initializeRecaptcha('recaptcha-container');
+      console.log('🔄 Initializing reCAPTCHA before sending OTP...');
+      const verifier = initializeRecaptcha('recaptcha-container');
+      if (!verifier) {
+        throw new Error('Failed to initialize reCAPTCHA. Please refresh the page.');
+      }
     }
+
+    console.log('📞 Sending OTP to:', formattedPhone);
 
     // Send OTP
     confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, recaptchaVerifier!);
-    console.log('OTP sent successfully');
+    console.log('✅ OTP sent successfully');
   } catch (error: any) {
-    console.error('Error sending OTP:', error);
+    console.error('❌ Error sending OTP:', error);
+
+    // If reCAPTCHA error, try to reinitialize
+    if (error.code === 'auth/internal-error' || error.message.includes('reCAPTCHA')) {
+      console.log('🔄 Attempting to reinitialize reCAPTCHA...');
+      recaptchaVerifier = null;
+      const verifier = initializeRecaptcha('recaptcha-container');
+      if (verifier) {
+        throw new Error('Please try again.');
+      }
+    }
+
     throw new Error(error.message || 'Failed to send OTP');
   }
 };

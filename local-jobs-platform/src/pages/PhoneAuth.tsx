@@ -25,7 +25,12 @@ export const PhoneAuth: React.FC = () => {
 
   // Initialize reCAPTCHA on mount
   useEffect(() => {
-    initializeRecaptcha('recaptcha-container');
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      initializeRecaptcha('recaptcha-container');
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSendOtp = async () => {
