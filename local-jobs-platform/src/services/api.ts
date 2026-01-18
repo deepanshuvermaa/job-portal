@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// MOCK MODE - All data stored in browser localStorage (for demo/testing)
-export const MOCK_MODE = true;
+// PRODUCTION MODE - Connected to Railway backend
+export const MOCK_MODE = false;
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const API_FALLBACK = 'http://localhost:5000';
