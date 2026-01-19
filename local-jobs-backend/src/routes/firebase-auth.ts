@@ -12,8 +12,8 @@ router.post('/verify', async (req: Request, res: Response) => {
   try {
     const { firebaseToken, role } = req.body;
 
-    if (!firebaseToken || !role) {
-      return ApiResponseUtil.error(res, 'Firebase token and role required', 400);
+    if (!firebaseToken) {
+      return ApiResponseUtil.error(res, 'Firebase token required', 400);
     }
 
     // Verify Firebase token
@@ -24,22 +24,29 @@ router.post('/verify', async (req: Request, res: Response) => {
       return ApiResponseUtil.error(res, 'Phone number not found in token', 400);
     }
 
+    // Remove country code prefix for storage (keep only 10 digits)
+    const cleanPhone = phone.replace(/^\+91/, '');
+
     // Check if user exists in Supabase
     const { data: existingUser } = await supabase
       .from('users')
       .select('*')
-      .eq('phone', phone)
+      .eq('phone', cleanPhone)
       .single();
 
     let user = existingUser;
 
-    // If user doesn't exist, create new user
+    // If user doesn't exist, create new user (requires role)
     if (!user) {
+      if (!role) {
+        return ApiResponseUtil.error(res, 'Role required for new user registration', 400);
+      }
+
       const { data: newUser, error } = await supabase
         .from('users')
         .insert([
           {
-            phone,
+            phone: cleanPhone,
             role,
             verification_status: 'pending',
           },
