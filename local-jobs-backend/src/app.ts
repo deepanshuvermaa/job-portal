@@ -32,7 +32,12 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
 app.use(cors({
-  origin: [config.FRONTEND_URL, 'http://localhost:5173'],
+  origin: [
+    config.FRONTEND_URL,
+    'http://localhost:5173',
+    'https://deepanshuverma.site',
+    'https://www.deepanshuverma.site'
+  ],
   credentials: true
 }));
 app.use(rateLimit({
