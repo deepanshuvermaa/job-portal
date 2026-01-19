@@ -105,4 +105,190 @@ router.post('/verify', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/firebase-auth/register/employer
+// Complete employer registration with Firebase token
+router.post('/register/employer', async (req: Request, res: Response) => {
+  try {
+    const {
+      firebaseToken,
+      business_name,
+      business_type,
+      city,
+      state,
+      pincode,
+      address,
+      gst_number,
+      pan_number,
+      description,
+      industry,
+      employee_count,
+    } = req.body;
+
+    console.log('📥 Employer registration request received');
+
+    if (!firebaseToken || !business_name) {
+      return ApiResponseUtil.error(res, 'Firebase token and business name required', 400);
+    }
+
+    // Verify Firebase token
+    const decodedToken = await verifyFirebaseToken(firebaseToken);
+    const phone = decodedToken.phone_number;
+
+    if (!phone) {
+      return ApiResponseUtil.error(res, 'Phone number not found in token', 400);
+    }
+
+    const cleanPhone = phone.replace(/^\+91/, '');
+
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', cleanPhone)
+      .single();
+
+    if (existingUser) {
+      return ApiResponseUtil.error(res, 'User already exists', 400);
+    }
+
+    // Create user record
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
+      .insert([
+        {
+          phone: cleanPhone,
+          role: 'employer',
+          verification_status: 'pending',
+        },
+      ])
+      .select()
+      .single();
+
+    if (userError) throw userError;
+
+    // Create employer profile
+    const { error: profileError } = await supabase.from('employer_profiles').insert([
+      {
+        user_id: newUser.id,
+        business_name,
+        business_type,
+        city,
+        state,
+        pincode,
+        address,
+        gst_number,
+        pan_number,
+        description,
+        industry,
+        employee_count,
+        verification_status: 'pending',
+      },
+    ]);
+
+    if (profileError) throw profileError;
+
+    // Generate JWT tokens
+    const tokens = JWTUtil.generateTokens(newUser.id, 'employer');
+
+    console.log('✅ Employer registered successfully');
+
+    return ApiResponseUtil.created(res, { user: newUser, tokens });
+  } catch (error: any) {
+    console.error('Employer registration error:', error);
+    return ApiResponseUtil.error(res, error.message || 'Registration failed', 500);
+  }
+});
+
+// POST /api/firebase-auth/register/worker
+// Complete worker registration with Firebase token
+router.post('/register/worker', async (req: Request, res: Response) => {
+  try {
+    const {
+      firebaseToken,
+      full_name,
+      city,
+      state,
+      pincode,
+      address,
+      skills,
+      experience_years,
+      preferred_job_types,
+      preferred_locations,
+      bio,
+    } = req.body;
+
+    console.log('📥 Worker registration request received');
+
+    if (!firebaseToken || !full_name) {
+      return ApiResponseUtil.error(res, 'Firebase token and full name required', 400);
+    }
+
+    // Verify Firebase token
+    const decodedToken = await verifyFirebaseToken(firebaseToken);
+    const phone = decodedToken.phone_number;
+
+    if (!phone) {
+      return ApiResponseUtil.error(res, 'Phone number not found in token', 400);
+    }
+
+    const cleanPhone = phone.replace(/^\+91/, '');
+
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', cleanPhone)
+      .single();
+
+    if (existingUser) {
+      return ApiResponseUtil.error(res, 'User already exists', 400);
+    }
+
+    // Create user record
+    const { data: newUser, error: userError } = await supabase
+      .from('users')
+      .insert([
+        {
+          phone: cleanPhone,
+          role: 'worker',
+          verification_status: 'pending',
+        },
+      ])
+      .select()
+      .single();
+
+    if (userError) throw userError;
+
+    // Create worker profile
+    const { error: profileError } = await supabase.from('worker_profiles').insert([
+      {
+        user_id: newUser.id,
+        full_name,
+        city,
+        state,
+        pincode,
+        address,
+        skills: skills || [],
+        experience_years: experience_years || 0,
+        preferred_job_types: preferred_job_types || [],
+        preferred_locations: preferred_locations || [],
+        bio,
+        verification_status: 'pending',
+      },
+    ]);
+
+    if (profileError) throw profileError;
+
+    // Generate JWT tokens
+    const tokens = JWTUtil.generateTokens(newUser.id, 'worker');
+
+    console.log('✅ Worker registered successfully');
+
+    return ApiResponseUtil.created(res, { user: newUser, tokens });
+  } catch (error: any) {
+    console.error('Worker registration error:', error);
+    return ApiResponseUtil.error(res, error.message || 'Registration failed', 500);
+  }
+});
+
 export default router;
