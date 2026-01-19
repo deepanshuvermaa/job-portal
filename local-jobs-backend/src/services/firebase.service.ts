@@ -48,10 +48,15 @@ export const initializeFirebase = () => {
 
 export const verifyFirebaseToken = async (idToken: string) => {
   try {
+    console.log('🔍 Verifying token with Firebase Admin...');
     const decodedToken = await admin.auth().verifyIdToken(idToken);
+    console.log('✅ Token verified successfully');
+    console.log('📋 Decoded token:', JSON.stringify(decodedToken, null, 2));
     return decodedToken;
-  } catch (error) {
-    throw new Error('Invalid Firebase token');
+  } catch (error: any) {
+    console.error('❌ Token verification failed:', error.message);
+    console.error('Error code:', error.code);
+    throw new Error(`Invalid Firebase token: ${error.message}`);
   }
 };
 

@@ -12,12 +12,18 @@ router.post('/verify', async (req: Request, res: Response) => {
   try {
     const { firebaseToken, role } = req.body;
 
+    console.log('📥 Verify request received');
+    console.log('Token present:', !!firebaseToken);
+    console.log('Role:', role);
+
     if (!firebaseToken) {
       return ApiResponseUtil.error(res, 'Firebase token required', 400);
     }
 
     // Verify Firebase token
+    console.log('🔐 Verifying Firebase token...');
     const decodedToken = await verifyFirebaseToken(firebaseToken);
+    console.log('✅ Token verified. Phone:', decodedToken.phone_number);
     const phone = decodedToken.phone_number;
 
     if (!phone) {
