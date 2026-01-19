@@ -40,13 +40,19 @@ router.post('/verify', async (req: Request, res: Response) => {
       .eq('phone', cleanPhone)
       .single();
 
+    // If user doesn't exist and no role provided, return isNewUser flag
+    if (!existingUser && !role) {
+      console.log('🆕 New user detected, role selection required');
+      return ApiResponseUtil.success(res, {
+        isNewUser: true,
+        phone: cleanPhone
+      });
+    }
+
     let user = existingUser;
 
     // If user doesn't exist, create new user (requires role)
     if (!user) {
-      if (!role) {
-        return ApiResponseUtil.error(res, 'Role required for new user registration', 400);
-      }
 
       const { data: newUser, error } = await supabase
         .from('users')
