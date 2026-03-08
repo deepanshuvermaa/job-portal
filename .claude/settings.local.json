@@ -16,7 +16,8 @@
       "Bash(git rm:*)",
       "Bash(powershell -Command \"Get-ChildItem -Path ''dist-latest.zip'' | Select-Object Name, Length, LastWriteTime\")",
       "Bash(powershell -Command \"Get-ChildItem -Path ''dist-final.zip'' | Select-Object Name, Length, LastWriteTime\")",
-      "Bash(powershell -Command \"Get-ChildItem -Path ''dist-final-complete.zip'' | Select-Object Name, Length, LastWriteTime\")"
+      "Bash(powershell -Command \"Get-ChildItem -Path ''dist-final-complete.zip'' | Select-Object Name, Length, LastWriteTime\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''local-jobs-platform\\dist-admin-redesign.zip'' | Select-Object Name, Length, LastWriteTime\")"
     ],
     "deny": [],
     "ask": []

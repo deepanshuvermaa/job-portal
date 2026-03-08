@@ -1479,6 +1479,166 @@ app.get('/api/admin/jobs/debug', authenticate, authorize('admin'), async (req: R
   }
 });
 
+// ===================
+// ADMIN: CONNECTION MANAGEMENT
+// ===================
+
+// Get All Connection Requests
+app.get('/api/admin/connections', authenticate, authorize('admin'), async (req: Request, res: Response) => {
+  try {
+    const { status } = req.query;
+
+    console.log(`📋 Admin fetching connections, status filter: ${status || 'all'}`);
+
+    let query = supabase
+      .from('connections')
+      .select(`
+        *,
+        application:applications(id, cover_letter, expected_salary),
+        job:applications(job:jobs(id, title, city))
+      `);
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data: connections, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    console.log(`✅ Found ${connections?.length || 0} connection requests`);
+
+    // Now get worker and employer details separately
+    const enrichedConnections = await Promise.all(
+      (connections || []).map(async (conn: any) => {
+        // Get worker profile
+        const { data: workerProfile } = await supabase
+          .from('worker_profiles')
+          .select('full_name, city, state')
+          .eq('user_id', conn.worker_id)
+          .single();
+
+        // Get worker phone
+        const { data: workerUser } = await supabase
+          .from('users')
+          .select('phone')
+          .eq('id', conn.worker_id)
+          .single();
+
+        // Get employer profile
+        const { data: employerProfile } = await supabase
+          .from('employer_profiles')
+          .select('business_name, city, state')
+          .eq('user_id', conn.employer_id)
+          .single();
+
+        // Get employer phone
+        const { data: employerUser } = await supabase
+          .from('users')
+          .select('phone')
+          .eq('id', conn.employer_id)
+          .single();
+
+        // Get job details
+        const { data: application } = await supabase
+          .from('applications')
+          .select('job_id')
+          .eq('id', conn.application_id)
+          .single();
+
+        let jobTitle = 'N/A';
+        if (application?.job_id) {
+          const { data: job } = await supabase
+            .from('jobs')
+            .select('title')
+            .eq('id', application.job_id)
+            .single();
+          jobTitle = job?.title || 'N/A';
+        }
+
+        return {
+          id: conn.id,
+          application_id: conn.application_id,
+          worker_id: conn.worker_id,
+          employer_id: conn.employer_id,
+          status: conn.status,
+          created_at: conn.created_at,
+          approved_at: conn.approved_at,
+          rejected_at: conn.rejected_at,
+          worker_name: workerProfile?.full_name || 'Unknown',
+          employer_name: employerProfile?.business_name || 'Unknown',
+          job_title: jobTitle,
+          worker_phone: conn.status === 'approved' ? workerUser?.phone : undefined,
+          employer_phone: conn.status === 'approved' ? employerUser?.phone : undefined
+        };
+      })
+    );
+
+    return ApiResponseUtil.success(res, enrichedConnections);
+  } catch (error: any) {
+    console.error('❌ Failed to fetch connections:', error);
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
+// Approve Connection Request
+app.put('/api/admin/connections/:connectionId/approve', authenticate, authorize('admin'), async (req: Request, res: Response) => {
+  try {
+    const { connectionId } = req.params;
+
+    console.log(`✅ Admin approving connection: ${connectionId}`);
+
+    const { data, error } = await supabase
+      .from('connections')
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        approved_by: req.user!.userId
+      })
+      .eq('id', connectionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`✅ Connection approved successfully`);
+
+    return ApiResponseUtil.success(res, { message: 'Connection approved', data });
+  } catch (error: any) {
+    console.error('❌ Connection approval failed:', error);
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
+// Reject Connection Request
+app.put('/api/admin/connections/:connectionId/reject', authenticate, authorize('admin'), async (req: Request, res: Response) => {
+  try {
+    const { connectionId } = req.params;
+
+    console.log(`❌ Admin rejecting connection: ${connectionId}`);
+
+    const { data, error } = await supabase
+      .from('connections')
+      .update({
+        status: 'rejected',
+        rejected_at: new Date().toISOString(),
+        rejected_by: req.user!.userId
+      })
+      .eq('id', connectionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`✅ Connection rejected successfully`);
+
+    return ApiResponseUtil.success(res, { message: 'Connection rejected', data });
+  } catch (error: any) {
+    console.error('❌ Connection rejection failed:', error);
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
 // Get All Jobs (with filters)
 app.get('/api/admin/jobs/all', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {
