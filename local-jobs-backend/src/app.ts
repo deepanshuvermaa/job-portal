@@ -692,7 +692,11 @@ app.get('/api/workers/applications', authenticate, authorize('worker'), async (r
   try {
     const { data } = await supabase
       .from('applications')
-      .select('*, jobs(*), employer_profiles!jobs(business_name)')
+      .select(`
+        *,
+        jobs(*),
+        employer:jobs(employer:employer_profiles!employer_profiles_user_id_fkey(business_name))
+      `)
       .eq('worker_id', req.user!.userId)
       .order('applied_at', { ascending: false });
 
