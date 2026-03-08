@@ -1588,12 +1588,13 @@ app.put('/api/admin/connections/:connectionId/approve', authenticate, authorize(
 
     console.log(`✅ Admin approving connection: ${connectionId}`);
 
+    // Don't set approved_by to avoid foreign key constraint issues
+    // The admin user ID from Firebase may not exist in the users table
     const { data, error } = await supabase
       .from('connections')
       .update({
         status: 'approved',
-        approved_at: new Date().toISOString(),
-        approved_by: req.user!.userId
+        approved_at: new Date().toISOString()
       })
       .eq('id', connectionId)
       .select()
@@ -1617,12 +1618,12 @@ app.put('/api/admin/connections/:connectionId/reject', authenticate, authorize('
 
     console.log(`❌ Admin rejecting connection: ${connectionId}`);
 
+    // Don't set rejected_by to avoid foreign key constraint issues
     const { data, error } = await supabase
       .from('connections')
       .update({
         status: 'rejected',
-        rejected_at: new Date().toISOString(),
-        rejected_by: req.user!.userId
+        rejected_at: new Date().toISOString()
       })
       .eq('id', connectionId)
       .select()
