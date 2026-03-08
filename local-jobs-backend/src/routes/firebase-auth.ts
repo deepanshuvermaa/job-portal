@@ -58,6 +58,7 @@ router.post('/verify', async (req: Request, res: Response) => {
         .from('users')
         .insert([
           {
+            id: decodedToken.uid,
             phone: cleanPhone,
             role,
           },
@@ -155,6 +156,7 @@ router.post('/register/employer', async (req: Request, res: Response) => {
       .from('users')
       .insert([
         {
+          id: decodedToken.uid,
           phone: cleanPhone,
           role: 'employer',
         },
@@ -247,6 +249,7 @@ router.post('/register/worker', async (req: Request, res: Response) => {
       .from('users')
       .insert([
         {
+          id: decodedToken.uid,
           phone: cleanPhone,
           role: 'worker',
         },
