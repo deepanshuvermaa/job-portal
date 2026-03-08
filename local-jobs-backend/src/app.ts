@@ -641,26 +641,38 @@ app.get('/api/workers/jobs/search', async (req: Request, res: Response) => {
   try {
     const { city, jobType, page = 1, limit = 20 } = req.query;
 
-    let query = supabase
+    // First get jobs
+    let jobsQuery = supabase
       .from('jobs')
-      .select(`
-        *,
-        employer:employer_profiles!employer_profiles_user_id_fkey(
-          business_name,
-          average_rating
-        )
-      `)
+      .select('*')
       .eq('status', 'open');
 
-    if (city) query = query.eq('city', city);
-    if (jobType) query = query.eq('job_type', jobType);
+    if (city) jobsQuery = jobsQuery.eq('city', city);
+    if (jobType) jobsQuery = jobsQuery.eq('job_type', jobType);
 
-    const { data, error, count } = await query
+    const { data: jobs, error: jobsError } = await jobsQuery
       .range((+page - 1) * +limit, +page * +limit - 1);
 
-    if (error) throw error;
+    if (jobsError) throw jobsError;
 
-    return ApiResponseUtil.paginated(res, data || [], +page, +limit, count || 0);
+    // Get employer profiles for these jobs
+    if (jobs && jobs.length > 0) {
+      const employerIds = jobs.map(job => job.employer_id);
+      const { data: employers } = await supabase
+        .from('employer_profiles')
+        .select('user_id, business_name, average_rating')
+        .in('user_id', employerIds);
+
+      // Attach employer data to jobs
+      const jobsWithEmployers = jobs.map(job => ({
+        ...job,
+        employer: employers?.find(e => e.user_id === job.employer_id) || null
+      }));
+
+      return ApiResponseUtil.paginated(res, jobsWithEmployers, +page, +limit, jobs.length);
+    }
+
+    return ApiResponseUtil.paginated(res, [], +page, +limit, 0);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }
