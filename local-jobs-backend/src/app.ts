@@ -819,24 +819,26 @@ app.put('/api/employers/applications/:applicationId', authenticate, authorize('e
 // ADMIN ROUTES
 // ===================
 
-// Get Pending Verifications
+// Get All Verifications (pending + approved + rejected)
 app.get('/api/admin/pending-verifications', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {
+    // Get ALL workers (not just pending)
     const { data: workers } = await supabase
       .from('worker_profiles')
       .select(`
         *,
         users!worker_profiles_user_id_fkey(*)
       `)
-      .eq('verification_status', 'pending');
+      .order('created_at', { ascending: false });
 
+    // Get ALL employers (not just pending)
     const { data: employers } = await supabase
       .from('employer_profiles')
       .select(`
         *,
         users!employer_profiles_user_id_fkey(*)
       `)
-      .eq('verification_status', 'pending');
+      .order('created_at', { ascending: false });
 
     return ApiResponseUtil.success(res, { workers, employers });
   } catch (error: any) {
