@@ -55,8 +55,8 @@ export const config: EnvConfig = {
 
   JWT_SECRET: getEnv('JWT_SECRET'),
   JWT_REFRESH_SECRET: getEnv('JWT_REFRESH_SECRET'),
-  JWT_EXPIRES_IN: getEnv('JWT_EXPIRES_IN', '15m'),
-  JWT_REFRESH_EXPIRES_IN: getEnv('JWT_REFRESH_EXPIRES_IN', '30d'),
+  JWT_EXPIRES_IN: getEnv('JWT_EXPIRES_IN', '30d'),  // 30 days - users stay logged in longer
+  JWT_REFRESH_EXPIRES_IN: getEnv('JWT_REFRESH_EXPIRES_IN', '90d'),  // 90 days for refresh
 
   CLOUDINARY_CLOUD_NAME: getEnv('CLOUDINARY_CLOUD_NAME'),
   CLOUDINARY_API_KEY: getEnv('CLOUDINARY_API_KEY'),

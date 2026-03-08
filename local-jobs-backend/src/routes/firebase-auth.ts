@@ -291,4 +291,34 @@ router.post('/register/worker', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/firebase-auth/refresh-token
+// Refresh access token using refresh token
+router.post('/refresh-token', async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    console.log('🔄 Token refresh request received');
+
+    if (!refreshToken) {
+      return ApiResponseUtil.error(res, 'Refresh token required', 400);
+    }
+
+    // Verify refresh token
+    const decoded = JWTUtil.verifyRefreshToken(refreshToken);
+
+    console.log('✅ Refresh token verified for user:', decoded.userId);
+
+    // Generate new tokens
+    const newTokens = JWTUtil.generateTokens(decoded.userId, decoded.role);
+
+    return ApiResponseUtil.success(res, {
+      accessToken: newTokens.accessToken,
+      refreshToken: newTokens.refreshToken
+    });
+  } catch (error: any) {
+    console.error('Token refresh error:', error);
+    return ApiResponseUtil.error(res, error.message || 'Token refresh failed', 401);
+  }
+});
+
 export default router;

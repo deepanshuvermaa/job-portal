@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
+import { Button } from '../components/shared/Button';
 import { getWorkerApplications } from '../services/jobs';
+import { VerificationBadge } from '../components/shared/VerificationBadge';
+import { ApplicationTimeline } from '../components/shared/ApplicationTimeline';
 
 export const WorkerApplications: React.FC = () => {
   const [applications, setApplications] = useState<any[]>([]);
@@ -47,14 +50,48 @@ export const WorkerApplications: React.FC = () => {
           <div className="grid gap-4">
             {applications.map((app) => (
               <Card key={app.id}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">{app.jobs?.title || 'Job'}</p>
-                    <p className="text-sm text-gray-500">Status: {app.status}</p>
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {app.jobs?.title || 'Job'}
+                      </h3>
+
+                      {app.jobs?.employer_profiles && (
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                          <span>{app.jobs.employer_profiles.business_name}</span>
+                          <VerificationBadge
+                            isVerified={app.jobs.employer_profiles.user?.is_verified}
+                            size="sm"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-3 text-sm text-gray-500">
+                        <span>📍 {app.jobs?.city}</span>
+                        <span>Applied: {new Date(app.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <Link to={`/worker/jobs/${app.job_id}`}>
+                      <Button variant="outline" size="sm">
+                        View Job
+                      </Button>
+                    </Link>
                   </div>
-                  <Link to={`/worker/jobs/${app.job_id}`} className="text-sm text-primary-600">
-                    View job
-                  </Link>
+
+                  <ApplicationTimeline
+                    currentStatus={app.status}
+                    createdAt={app.created_at}
+                    updatedAt={app.updated_at}
+                  />
+
+                  {app.employer_notes && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-medium text-blue-900 mb-1">Employer Note:</p>
+                      <p className="text-sm text-blue-700">{app.employer_notes}</p>
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}

@@ -163,9 +163,41 @@ export const WorkerSignup: React.FC = () => {
     }
   };
 
+  const formSections = [
+    { id: 1, label: language === 'hi' ? 'व्यक्तिगत' : 'Personal', completed: !!watch('name') && watch('name').length >= 2 },
+    { id: 2, label: language === 'hi' ? 'कौशल' : 'Skills', completed: selectedSkills.length > 0 },
+    { id: 3, label: language === 'hi' ? 'स्थान' : 'Location', completed: !!watch('city') && !!watch('area') && !!watch('locality') },
+    { id: 4, label: language === 'hi' ? 'पूर्ण करें' : 'Complete', completed: false }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Progress Indicator */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            {formSections.map((section, index) => (
+              <React.Fragment key={section.id}>
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    section.completed
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {section.id}
+                  </div>
+                  <span className="text-xs mt-1 text-gray-600">{section.label}</span>
+                </div>
+                {index < formSections.length - 1 && (
+                  <div className={`flex-1 h-1 mx-2 ${
+                    section.completed ? 'bg-green-500' : 'bg-gray-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
         <Card>
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">

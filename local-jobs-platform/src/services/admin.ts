@@ -64,3 +64,28 @@ export const rejectJob = async (jobId: string) => {
   const { data } = await api.put(`/api/admin/jobs/${jobId}/reject`);
   return data.data;
 };
+
+export const getAllJobs = async (city?: string, status?: string, page: number = 1, limit: number = 20) => {
+  const { data } = await api.get('/api/admin/jobs/all', { params: { city, status, page, limit } });
+  return data.data;
+};
+
+export const banUser = async (userId: string) => {
+  const { data } = await api.put(`/api/admin/users/${userId}/ban`);
+  return data.data;
+};
+
+export const unbanUser = async (userId: string) => {
+  const { data } = await api.put(`/api/admin/users/${userId}/unban`);
+  return data.data;
+};
+
+export const hideReview = async (reviewId: string) => {
+  const { data } = await api.put(`/api/admin/reviews/${reviewId}/hide`);
+  return data.data;
+};
+
+export const showReview = async (reviewId: string) => {
+  const { data } = await api.put(`/api/admin/reviews/${reviewId}/show`);
+  return data.data;
+};

@@ -17,6 +17,7 @@ import { OCRService } from './services/ocr.service';
 import { NotificationService } from './services/notification.service';
 import { initializeFirebase } from './services/firebase.service';
 import firebaseAuthRouter from './routes/firebase-auth';
+import connectionsRouter from './routes/connections';
 
 const app: Express = express();
 
@@ -60,6 +61,9 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Firebase Authentication
 app.use('/api/firebase-auth', firebaseAuthRouter);
+
+// Connections (admin-moderated contact sharing)
+app.use('/api/connections', connectionsRouter);
 
 // Send OTP
 app.post('/api/auth/send-otp', async (req: Request, res: Response) => {
@@ -641,7 +645,9 @@ app.get('/api/workers/jobs/search', async (req: Request, res: Response) => {
   try {
     const { city, jobType, page = 1, limit = 20 } = req.query;
 
-    // First get jobs
+    console.log(`🔍 Job search request - city: ${city}, jobType: ${jobType}, page: ${page}`);
+
+    // First get jobs with status='open'
     let jobsQuery = supabase
       .from('jobs')
       .select('*')
@@ -654,6 +660,8 @@ app.get('/api/workers/jobs/search', async (req: Request, res: Response) => {
       .range((+page - 1) * +limit, +page * +limit - 1);
 
     if (jobsError) throw jobsError;
+
+    console.log(`📊 Found ${jobs?.length || 0} jobs with status='open'`);
 
     // Get employer profiles for these jobs
     if (jobs && jobs.length > 0) {
@@ -1378,15 +1386,27 @@ app.get('/api/admin/jobs/pending', authenticate, authorize('admin'), async (req:
 app.put('/api/admin/jobs/:jobId/approve', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
-    const { error } = await supabase
+
+    console.log(`📝 Admin approving job: ${jobId}`);
+
+    const { data, error } = await supabase
       .from('jobs')
-      .update({ status: 'open' })
-      .eq('id', jobId);
+      .update({
+        status: 'open',
+        approved_at: new Date().toISOString(),
+        approved_by: req.user!.userId
+      })
+      .eq('id', jobId)
+      .select()
+      .single();
 
     if (error) throw error;
 
-    return ApiResponseUtil.success(res, { message: 'Job approved' });
+    console.log(`✅ Job approved successfully:`, data);
+
+    return ApiResponseUtil.success(res, { message: 'Job approved', data });
   } catch (error: any) {
+    console.error(`❌ Job approval failed:`, error);
     return ApiResponseUtil.error(res, error.message);
   }
 });

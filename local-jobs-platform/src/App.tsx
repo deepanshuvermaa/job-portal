@@ -24,6 +24,23 @@ import { Login } from './pages/Login';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { Notifications } from './pages/Notifications';
 import { NotFound } from './pages/NotFound';
+import { EmployerProfile } from './pages/EmployerProfile';
+import { WorkerProfileEdit } from './pages/WorkerProfileEdit';
+import { EmployerProfileEdit } from './pages/EmployerProfileEdit';
+import { SavedJobs } from './pages/SavedJobs';
+import { JobTemplates } from './pages/JobTemplates';
+import { ReferralDashboard } from './pages/ReferralDashboard';
+import { JobAnalytics } from './pages/JobAnalytics';
+import { PublicEmployerPage } from './pages/PublicEmployerPage';
+import { PublicWorkerProfile } from './pages/PublicWorkerProfile';
+import { ReportJob } from './pages/ReportJob';
+import { ReportUser } from './pages/ReportUser';
+import { MyReports } from './pages/MyReports';
+import { AdminReports } from './pages/AdminReports';
+import { AdminAllJobs } from './pages/AdminAllJobs';
+import { JobAlerts } from './pages/JobAlerts';
+import { BrowseWorkers } from './pages/BrowseWorkers';
+import { AdminConnections } from './pages/AdminConnections';
 
 const App: React.FC = () => {
   const { token, user, loading, setLoading, setUser } = useAuthStore();
@@ -71,27 +88,45 @@ const App: React.FC = () => {
 
       <Route element={<ProtectedRoute role="employer" />}>
         <Route path="/employer/dashboard" element={<EmployerDashboard />} />
+        <Route path="/employer/profile" element={<EmployerProfile />} />
+        <Route path="/employer/profile/edit" element={<EmployerProfileEdit />} />
         <Route path="/employer/jobs" element={<EmployerJobs />} />
         <Route path="/employer/jobs/:jobId/applications" element={<EmployerJobApplications />} />
+        <Route path="/employer/jobs/:jobId/analytics" element={<JobAnalytics />} />
         <Route path="/employer/post-job" element={<PostJob />} />
+        <Route path="/employer/browse-workers" element={<BrowseWorkers />} />
+        <Route path="/employer/templates" element={<JobTemplates />} />
+        <Route path="/employer/referrals" element={<ReferralDashboard />} />
+        <Route path="/employer/workers/:workerId" element={<PublicWorkerProfile />} />
       </Route>
 
       <Route path="/worker/signup" element={<WorkerSignup />} />
 
       <Route element={<ProtectedRoute role="worker" />}>
         <Route path="/worker/dashboard" element={<WorkerDashboard />} />
+        <Route path="/worker/profile/edit" element={<WorkerProfileEdit />} />
         <Route path="/worker/jobs" element={<JobFeed />} />
         <Route path="/worker/jobs/:jobId" element={<JobDetails />} />
         <Route path="/worker/applications" element={<WorkerApplications />} />
+        <Route path="/worker/saved-jobs" element={<SavedJobs />} />
+        <Route path="/worker/job-alerts" element={<JobAlerts />} />
+        <Route path="/worker/referrals" element={<ReferralDashboard />} />
+        <Route path="/worker/employers/:employerId" element={<PublicEmployerPage />} />
       </Route>
 
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route element={<ProtectedRoute role="admin" />}>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/reports" element={<AdminReports />} />
+        <Route path="/admin/jobs" element={<AdminAllJobs />} />
+        <Route path="/admin/connections" element={<AdminConnections />} />
       </Route>
 
       <Route element={<ProtectedRoute />}>
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/reports" element={<MyReports />} />
+        <Route path="/report/job/:jobId" element={<ReportJob />} />
+        <Route path="/report/user/:userId" element={<ReportUser />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

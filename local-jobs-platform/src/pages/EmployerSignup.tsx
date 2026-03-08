@@ -73,6 +73,7 @@ export const EmployerSignup: React.FC = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<EmployerFormData>({
     resolver: zodResolver(employerSchema),
@@ -148,9 +149,41 @@ export const EmployerSignup: React.FC = () => {
     }
   };
 
+  const formSections = [
+    { id: 1, label: language === 'hi' ? 'व्यवसाय' : 'Business', completed: !!watch('businessName') && !!watch('businessType') },
+    { id: 2, label: language === 'hi' ? 'दस्तावेज़' : 'Documents', completed: !!watch('gstNumber') || !!watch('panNumber') },
+    { id: 3, label: language === 'hi' ? 'पता' : 'Address', completed: !!watch('city') && !!watch('pincode') },
+    { id: 4, label: language === 'hi' ? 'पूर्ण करें' : 'Complete', completed: false }
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Progress Indicator */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            {formSections.map((section, index) => (
+              <React.Fragment key={section.id}>
+                <div className="flex flex-col items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${
+                    section.completed
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {section.id}
+                  </div>
+                  <span className="text-xs mt-1 text-gray-600">{section.label}</span>
+                </div>
+                {index < formSections.length - 1 && (
+                  <div className={`flex-1 h-1 mx-2 ${
+                    section.completed ? 'bg-primary-500' : 'bg-gray-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
         <Card>
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
