@@ -643,7 +643,13 @@ app.get('/api/workers/jobs/search', async (req: Request, res: Response) => {
 
     let query = supabase
       .from('jobs')
-      .select('*, employer_profiles!inner(business_name, average_rating)')
+      .select(`
+        *,
+        employer:employer_profiles!employer_profiles_user_id_fkey(
+          business_name,
+          average_rating
+        )
+      `)
       .eq('status', 'open');
 
     if (city) query = query.eq('city', city);
@@ -914,7 +920,10 @@ app.get('/api/admin/jobs/pending', authenticate, authorize('admin'), async (req:
   try {
     const { data } = await supabase
       .from('jobs')
-      .select('*, employer_profiles!inner(business_name)')
+      .select(`
+        *,
+        employer:employer_profiles!employer_profiles_user_id_fkey(business_name)
+      `)
       .eq('status', 'draft')
       .order('created_at', { ascending: false });
 
@@ -967,7 +976,13 @@ app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
     const { jobId } = req.params;
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, employer_profiles!inner(business_name, average_rating)')
+      .select(`
+        *,
+        employer:employer_profiles!employer_profiles_user_id_fkey(
+          business_name,
+          average_rating
+        )
+      `)
       .eq('id', jobId)
       .single();
 
