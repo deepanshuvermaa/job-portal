@@ -60,7 +60,6 @@ router.post('/verify', async (req: Request, res: Response) => {
           {
             phone: cleanPhone,
             role,
-            verification_status: 'pending',
           },
         ])
         .select()
@@ -158,7 +157,6 @@ router.post('/register/employer', async (req: Request, res: Response) => {
         {
           phone: cleanPhone,
           role: 'employer',
-          verification_status: 'pending',
         },
       ])
       .select()
@@ -251,7 +249,6 @@ router.post('/register/worker', async (req: Request, res: Response) => {
         {
           phone: cleanPhone,
           role: 'worker',
-          verification_status: 'pending',
         },
       ])
       .select()
