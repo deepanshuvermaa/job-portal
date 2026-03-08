@@ -4,10 +4,12 @@ import type { AuthState, User } from '../types';
 
 interface AuthStore extends AuthState {
   pendingPhone: string | null;
+  pendingFirebaseToken: string | null;
   refreshToken: string | null;
   setUser: (user: User | null) => void;
   setToken: (token: string | null, refreshToken?: string | null) => void;
   setPendingPhone: (phone: string | null) => void;
+  setPendingFirebaseToken: (token: string | null) => void;
   login: (user: User, token: string, refreshToken?: string | null) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
@@ -22,6 +24,7 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       loading: false,
       pendingPhone: null,
+      pendingFirebaseToken: null,
 
       setUser: (user) =>
         set({
@@ -38,6 +41,11 @@ export const useAuthStore = create<AuthStore>()(
       setPendingPhone: (phone) =>
         set({
           pendingPhone: phone,
+        }),
+
+      setPendingFirebaseToken: (token) =>
+        set({
+          pendingFirebaseToken: token,
         }),
 
       login: (user, token, refreshToken) =>
@@ -57,6 +65,7 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: false,
           loading: false,
           pendingPhone: null,
+          pendingFirebaseToken: null,
         }),
 
       setLoading: (loading) =>

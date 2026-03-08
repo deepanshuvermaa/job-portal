@@ -20,9 +20,19 @@ export const AdminLogin: React.FC = () => {
     setError('');
     try {
       const response = await adminLogin(password);
-      if (response?.tokens?.accessToken && response?.user) {
+      if (response?.tokens?.accessToken) {
         setToken(response.tokens.accessToken, response.tokens.refreshToken);
-        login(response.user, response.tokens.accessToken, response.tokens.refreshToken);
+        // Create admin user object matching User type
+        const adminUser = {
+          id: 'admin-user-id',
+          role: 'admin' as const,
+          phone: '',
+          name: 'Admin',
+          verificationStatus: 'approved' as const,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        login(adminUser, response.tokens.accessToken, response.tokens.refreshToken);
         navigate('/admin/dashboard');
       }
     } catch (err: any) {

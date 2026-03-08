@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Briefcase, Users, MapPin, TrendingUp, Shield, Clock,
   CheckCircle, Star, Search, ArrowRight, Menu, X,
@@ -669,12 +669,12 @@ export const LandingPage: React.FC = () => {
               <p className="text-gray-400 mb-2">{t.footer.tagline}</p>
               <p className="text-sm text-gray-500">{t.footer.copyright}</p>
               <div className="mt-3">
-                <a
-                  href="/admin/login"
+                <Link
+                  to="/admin/login"
                   className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
                 >
                   Admin Login
-                </a>
+                </Link>
               </div>
             </div>
           </div>

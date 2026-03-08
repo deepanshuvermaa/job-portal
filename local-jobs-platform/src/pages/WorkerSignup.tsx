@@ -28,19 +28,14 @@ const workerSchema = z.object({
   city: z.string().min(2, 'City is required'),
   area: z.string().min(2, 'Area is required'),
   locality: z.string().min(2, 'Locality is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Confirm password is required'),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  { message: 'Passwords do not match', path: ['confirmPassword'] }
-);
+});
 
 type WorkerFormData = z.infer<typeof workerSchema>;
 
 export const WorkerSignup: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useAppStore();
-  const { login, pendingPhone, setPendingPhone, setToken } = useAuthStore();
+  const { login, pendingPhone, pendingFirebaseToken, setPendingPhone, setToken } = useAuthStore();
   const { t } = useTranslation(language);
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -57,10 +52,10 @@ export const WorkerSignup: React.FC = () => {
   }, [language]);
 
   useEffect(() => {
-    if (!pendingPhone) {
+    if (!pendingPhone || !pendingFirebaseToken) {
       navigate('/auth/phone');
     }
-  }, [pendingPhone, navigate]);
+  }, [pendingPhone, pendingFirebaseToken, navigate]);
 
   const {
     register,
@@ -128,7 +123,7 @@ export const WorkerSignup: React.FC = () => {
   const handleVoiceRecording = (_blob: Blob, _url: string) => {};
 
   const onSubmit = async (data: WorkerFormData) => {
-    if (!pendingPhone) {
+    if (!pendingPhone || !pendingFirebaseToken) {
       navigate('/auth/phone');
       return;
     }
@@ -138,8 +133,7 @@ export const WorkerSignup: React.FC = () => {
 
     try {
       const response = await registerWorker({
-        phone: pendingPhone,
-        password: data.password,
+        firebaseToken: pendingFirebaseToken,
         full_name: data.name,
         address: `${data.area}, ${data.locality}`,
         city: data.city,
@@ -210,7 +204,7 @@ export const WorkerSignup: React.FC = () => {
               </div>
 
               <FileUpload
-                accept="image/*,.pdf"
+                accept="image/*,application/pdf"
                 maxSize={5 * 1024 * 1024}
                 onFileSelect={handleResumeUpload}
                 loading={uploadingResume}
@@ -394,28 +388,6 @@ export const WorkerSignup: React.FC = () => {
                   ? '30 सेकंड में अपना परिचय दें (वैकल्पिक)'
                   : 'Introduce yourself in 30 seconds (optional)'}
               />
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {language === 'hi' ? 'पासवर्ड सेट करें' : 'Set Password'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  type="password"
-                  label={language === 'hi' ? 'पासवर्ड' : 'Password'}
-                  {...register('password')}
-                  error={errors.password?.message}
-                  required
-                />
-                <Input
-                  type="password"
-                  label={language === 'hi' ? 'पासवर्ड पुष्टि' : 'Confirm Password'}
-                  {...register('confirmPassword')}
-                  error={errors.confirmPassword?.message}
-                  required
-                />
-              </div>
             </div>
 
             <Button

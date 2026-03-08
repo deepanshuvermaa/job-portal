@@ -5,4 +5,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/local-job-portal/',
   plugins: [react()],
+  optimizeDeps: {
+    exclude: ['pdfjs-dist']
+  },
+  worker: {
+    format: 'es'
+  }
 })

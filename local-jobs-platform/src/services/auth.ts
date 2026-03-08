@@ -41,7 +41,7 @@ export const registerWorker = async (payload: any) => {
   if (MOCK_MODE) {
     return mockRegisterWorker(payload);
   }
-  const { data } = await api.post('/api/auth/register/worker', payload);
+  const { data } = await api.post('/api/firebase-auth/register/worker', payload);
   return data.data;
 };
 
@@ -49,7 +49,7 @@ export const registerEmployer = async (payload: any) => {
   if (MOCK_MODE) {
     return mockRegisterEmployer(payload);
   }
-  const { data } = await api.post('/api/auth/register/employer', payload);
+  const { data } = await api.post('/api/firebase-auth/register/employer', payload);
   return data.data;
 };
 

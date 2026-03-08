@@ -15,7 +15,7 @@ export const PhoneAuth: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useAppStore();
   const { t } = useTranslation(language);
-  const { login, setPendingPhone, setToken } = useAuthStore();
+  const { login, setPendingPhone, setPendingFirebaseToken, setToken } = useAuthStore();
 
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
@@ -67,28 +67,35 @@ export const PhoneAuth: React.FC = () => {
       const firebaseToken = await verifyFirebaseOTP(otp);
 
       // 2. Send Firebase token to backend for verification and user creation/login
-      const { data } = await api.post('/api/firebase-auth/verify', {
+      const response = await api.post('/api/firebase-auth/verify', {
         firebaseToken
       });
 
+      console.log('Backend response:', response.data);
+
       // 3. Handle response
-      if (data.isNewUser) {
+      if (response.data.data.isNewUser) {
+        console.log('New user - navigating to role select');
         setPendingPhone(phone);
+        setPendingFirebaseToken(firebaseToken);
         navigate('/auth/role-select');
       } else {
-        setToken(data.tokens.accessToken, data.tokens.refreshToken);
-        login(data.user, data.tokens.accessToken, data.tokens.refreshToken);
+        console.log('Existing user - logging in');
+        const userData = response.data.data;
+        setToken(userData.tokens.accessToken, userData.tokens.refreshToken);
+        login(userData.user, userData.tokens.accessToken, userData.tokens.refreshToken);
 
-        if (data.user.role === 'employer') {
+        if (userData.user.role === 'employer') {
           navigate('/employer/dashboard');
-        } else if (data.user.role === 'worker') {
+        } else if (userData.user.role === 'worker') {
           navigate('/worker/dashboard');
         } else {
           navigate('/admin/dashboard');
         }
       }
     } catch (err: any) {
-      setError(err.message || t('auth.invalidOTP'));
+      console.error('OTP verification error:', err);
+      setError(err.response?.data?.message || err.message || t('auth.invalidOTP'));
     } finally {
       setLoading(false);
     }

@@ -28,12 +28,7 @@ const employerSchema = z.object({
   area: z.string().min(2, 'Area is required'),
   locality: z.string().min(2, 'Locality is required'),
   pincode: z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Confirm password is required'),
 }).refine(
-  (data) => data.password === data.confirmPassword,
-  { message: 'Passwords do not match', path: ['confirmPassword'] }
-).refine(
   (data) => {
     if (data.gstNumber && data.gstNumber.length > 0) {
       return validateGST(data.gstNumber).isValid;
@@ -56,7 +51,7 @@ type EmployerFormData = z.infer<typeof employerSchema>;
 export const EmployerSignup: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useAppStore();
-  const { login, pendingPhone, setPendingPhone, setToken } = useAuthStore();
+  const { login, pendingPhone, pendingFirebaseToken, setPendingPhone, setToken } = useAuthStore();
   const { t } = useTranslation(language);
 
   const [businessProofFile, setBusinessProofFile] = useState<File | null>(null);
@@ -101,7 +96,7 @@ export const EmployerSignup: React.FC = () => {
   };
 
   const onSubmit = async (data: EmployerFormData) => {
-    if (!pendingPhone) {
+    if (!pendingPhone || !pendingFirebaseToken) {
       navigate('/auth/phone');
       return;
     }
@@ -122,8 +117,7 @@ export const EmployerSignup: React.FC = () => {
 
     try {
       const response = await registerEmployer({
-        phone: pendingPhone,
-        password: data.password,
+        firebaseToken: pendingFirebaseToken,
         business_name: data.businessName,
         business_type: mappedBusinessType,
         industry: data.businessType,
@@ -276,7 +270,7 @@ export const EmployerSignup: React.FC = () => {
                 <FileUpload
                   label={t('employer.uploadProof')}
                   helperText={t('employer.proofHelp')}
-                  accept="image/*,.pdf"
+                  accept="image/*,application/pdf"
                   maxSize={2 * 1024 * 1024}
                   onFileSelect={handleProofUpload}
                   onFileRemove={() => {
@@ -285,28 +279,6 @@ export const EmployerSignup: React.FC = () => {
                   }}
                   uploadedUrl={businessProofUrl}
                   loading={uploadingProof}
-                />
-              </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {language === 'hi' ? 'पासवर्ड सेट करें' : 'Set Password'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  type="password"
-                  label={language === 'hi' ? 'पासवर्ड' : 'Password'}
-                  {...register('password')}
-                  error={errors.password?.message}
-                  required
-                />
-                <Input
-                  type="password"
-                  label={language === 'hi' ? 'पासवर्ड पुष्टि' : 'Confirm Password'}
-                  {...register('confirmPassword')}
-                  error={errors.confirmPassword?.message}
-                  required
                 />
               </div>
             </div>
