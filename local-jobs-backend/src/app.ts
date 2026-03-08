@@ -1623,19 +1623,37 @@ app.put('/api/admin/reviews/:reviewId/show', authenticate, authorize('admin'), a
 app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
-    const { data, error } = await supabase
+
+    console.log(`📋 Fetching job details for ID: ${jobId}`);
+
+    // First, get the job
+    const { data: jobData, error: jobError } = await supabase
       .from('jobs')
-      .select(`
-        *,
-        employer:employer_profiles!employer_profiles_user_id_fkey(
-          business_name,
-          average_rating
-        )
-      `)
+      .select('*')
       .eq('id', jobId)
       .single();
 
-    if (error) throw error;
+    if (jobError) {
+      console.error(`❌ Job fetch error:`, jobError);
+      throw jobError;
+    }
+
+    console.log(`✅ Job found: ${jobData.title}, employer_id: ${jobData.employer_id}`);
+
+    // Then get the employer profile separately
+    const { data: employerData } = await supabase
+      .from('employer_profiles')
+      .select('business_name, average_rating')
+      .eq('user_id', jobData.employer_id)
+      .single();
+
+    console.log(`✅ Employer found: ${employerData?.business_name || 'Not found'}`);
+
+    // Combine the data
+    const data = {
+      ...jobData,
+      employer: employerData || null
+    };
 
     // Increment views count
     await supabase.from('jobs').update({ views_count: (data.views_count || 0) + 1 }).eq('id', jobId);
@@ -1653,6 +1671,7 @@ app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
 
     return ApiResponseUtil.success(res, data);
   } catch (error: any) {
+    console.error(`❌ Job detail error:`, error);
     return ApiResponseUtil.error(res, error.message);
   }
 });
