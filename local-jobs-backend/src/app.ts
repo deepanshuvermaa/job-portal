@@ -705,14 +705,46 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
       return ApiResponseUtil.error(res, 'Daily application limit reached (10 applications per day)');
     }
 
-    const { error } = await supabase.from('applications').insert({
+    // Get job details to find employer_id
+    const { data: jobData } = await supabase
+      .from('jobs')
+      .select('employer_id')
+      .eq('id', jobId)
+      .single();
+
+    const { data: applicationData, error } = await supabase.from('applications').insert({
       job_id: jobId,
       worker_id: req.user!.userId,
       cover_letter,
       expected_salary
-    });
+    }).select().single();
 
     if (error) throw error;
+
+    console.log(`✅ Application created: ${applicationData.id}`);
+
+    // AUTO-CREATE CONNECTION REQUEST when worker applies
+    if (jobData?.employer_id) {
+      // Check if connection already exists
+      const { data: existingConnection } = await supabase
+        .from('connections')
+        .select('id, status')
+        .eq('worker_id', req.user!.userId)
+        .eq('employer_id', jobData.employer_id)
+        .maybeSingle();
+
+      if (!existingConnection) {
+        await supabase.from('connections').insert({
+          application_id: applicationData.id,
+          worker_id: req.user!.userId,
+          employer_id: jobData.employer_id,
+          status: 'pending'
+        });
+        console.log(`📨 Auto-created connection request: worker=${req.user!.userId}, employer=${jobData.employer_id}`);
+      } else {
+        console.log(`📌 Connection already exists with status: ${existingConnection.status}`);
+      }
+    }
 
     // Update application limit counter
     if (limitData) {
