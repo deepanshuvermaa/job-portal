@@ -1428,6 +1428,25 @@ app.put('/api/admin/jobs/:jobId/reject', authenticate, authorize('admin'), async
   }
 });
 
+// DEBUG: Get all jobs with their statuses
+app.get('/api/admin/jobs/debug', authenticate, authorize('admin'), async (req: Request, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('id, title, status, created_at, employer_id')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    console.log('🔍 DEBUG - All jobs in database:', JSON.stringify(data, null, 2));
+
+    return ApiResponseUtil.success(res, { jobs: data });
+  } catch (error: any) {
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
 // Get All Jobs (with filters)
 app.get('/api/admin/jobs/all', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {
