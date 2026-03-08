@@ -824,12 +824,18 @@ app.get('/api/admin/pending-verifications', authenticate, authorize('admin'), as
   try {
     const { data: workers } = await supabase
       .from('worker_profiles')
-      .select('*, users!inner(*)')
+      .select(`
+        *,
+        users!worker_profiles_user_id_fkey(*)
+      `)
       .eq('verification_status', 'pending');
 
     const { data: employers } = await supabase
       .from('employer_profiles')
-      .select('*, users!inner(*)')
+      .select(`
+        *,
+        users!employer_profiles_user_id_fkey(*)
+      `)
       .eq('verification_status', 'pending');
 
     return ApiResponseUtil.success(res, { workers, employers });
