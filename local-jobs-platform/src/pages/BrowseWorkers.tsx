@@ -6,12 +6,15 @@ import { Input } from '../components/shared/Input';
 import { api } from '../services/api';
 import { VerificationBadge } from '../components/shared/VerificationBadge';
 import { RatingStars } from '../components/shared/RatingStars';
-import { MapPin, Briefcase, Download, User } from 'lucide-react';
+import { MapPin, Briefcase, Download, User, Heart } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 
 export const BrowseWorkers: React.FC = () => {
+  const { user } = useAuthStore();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [expressInterestLoading, setExpressInterestLoading] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +58,30 @@ export const BrowseWorkers: React.FC = () => {
     setSkillFilter('');
     setExperienceFilter('');
     loadWorkers();
+  };
+
+  const handleExpressInterest = async (workerId: string) => {
+    if (!user) return;
+
+    setExpressInterestLoading(workerId);
+    try {
+      await api.post('/api/connections/create', {
+        worker_id: workerId,
+        employer_id: user.id,
+        application_id: null  // No specific application, general interest
+      });
+
+      alert('Interest expressed! Admin will review your connection request.');
+    } catch (err: any) {
+      const message = err?.response?.data?.error || 'Failed to express interest';
+      if (message.includes('already exists')) {
+        alert('You have already expressed interest in this worker.');
+      } else {
+        alert(message);
+      }
+    } finally {
+      setExpressInterestLoading(null);
+    }
   };
 
   return (
@@ -222,12 +249,21 @@ export const BrowseWorkers: React.FC = () => {
                         </div>
 
                         <div className="flex flex-col gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleExpressInterest(worker.user_id)}
+                            disabled={expressInterestLoading === worker.user_id}
+                          >
+                            <Heart size={16} className="mr-1" />
+                            {expressInterestLoading === worker.user_id ? 'Sending...' : 'Express Interest'}
+                          </Button>
                           <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2">
                             <p className="text-xs text-blue-900 font-medium mb-1">
-                              🔒 Resume Protected
+                              🔒 Contact Protected
                             </p>
                             <p className="text-xs text-blue-700">
-                              Request connection through admin to view resume
+                              Click "Express Interest" to request contact info
                             </p>
                           </div>
                           <div className="text-xs text-gray-500 text-right">
@@ -259,14 +295,15 @@ export const BrowseWorkers: React.FC = () => {
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-800 font-medium mb-2">
-            🔒 Privacy Protection Policy
+            🔒 How Connection Requests Work
           </p>
-          <ul className="text-sm text-blue-700 space-y-1 ml-4 list-disc">
-            <li>All phone numbers and resumes are hidden until admin approval</li>
-            <li>To connect with a worker: shortlist them from your job applications</li>
-            <li>Admin will review and approve genuine connection requests</li>
+          <ol className="text-sm text-blue-700 space-y-1 ml-4 list-decimal">
+            <li>You can see all worker profiles (skills, experience, location, etc.)</li>
+            <li>Click "Express Interest" on workers you want to contact</li>
+            <li>Admin reviews your connection request</li>
+            <li>Once approved, phone numbers and resumes become visible</li>
             <li>This prevents spam and ensures both parties' privacy</li>
-          </ul>
+          </ol>
         </div>
       </div>
     </div>

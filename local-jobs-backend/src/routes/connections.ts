@@ -112,23 +112,23 @@ router.put('/:id/reject', adminMiddleware, async (req: Request, res: Response) =
 });
 
 // POST /api/connections/create
-// Create a connection request (triggered when employer shortlists worker)
+// Create a connection request (employer/worker expresses interest)
 router.post('/create', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { application_id, worker_id, employer_id } = req.body;
 
-    if (!application_id || !worker_id || !employer_id) {
-      return ApiResponseUtil.error(res, 'Missing required fields', 400);
+    // application_id is optional (can be null for general interest)
+    if (!worker_id || !employer_id) {
+      return ApiResponseUtil.error(res, 'worker_id and employer_id are required', 400);
     }
 
-    // Check if connection already exists
+    // Check if connection already exists (regardless of application_id)
     const { data: existing } = await supabase
       .from('connections')
       .select('*')
-      .eq('application_id', application_id)
       .eq('worker_id', worker_id)
       .eq('employer_id', employer_id)
-      .single();
+      .maybeSingle();  // Changed from .single() to handle no results
 
     if (existing) {
       return ApiResponseUtil.success(res, existing, 'Connection request already exists');
@@ -138,7 +138,7 @@ router.post('/create', authMiddleware, async (req: Request, res: Response) => {
     const { data, error } = await supabase
       .from('connections')
       .insert([{
-        application_id,
+        application_id: application_id || null,
         worker_id,
         employer_id,
         status: 'pending'
@@ -148,7 +148,7 @@ router.post('/create', authMiddleware, async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    console.log(`📨 Connection request created: ${worker_id} <-> ${employer_id}`);
+    console.log(`📨 Connection request created: worker=${worker_id}, employer=${employer_id}, app=${application_id || 'general'}`);
 
     return ApiResponseUtil.created(res, data, 'Connection request created successfully');
   } catch (error: any) {

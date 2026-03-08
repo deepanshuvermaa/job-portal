@@ -22,8 +22,9 @@ CREATE INDEX IF NOT EXISTS idx_connections_worker ON connections(worker_id);
 CREATE INDEX IF NOT EXISTS idx_connections_employer ON connections(employer_id);
 CREATE INDEX IF NOT EXISTS idx_connections_application ON connections(application_id);
 
--- Unique constraint: one connection per worker-employer-application combo
-CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_connection ON connections(worker_id, employer_id, application_id);
+-- Unique constraint: one connection per worker-employer pair
+-- (They can only have ONE connection, even if multiple applications exist)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_connection ON connections(worker_id, employer_id);
 
 -- Comments
 COMMENT ON TABLE connections IS 'Tracks connection requests between workers and employers requiring admin approval';
