@@ -17,7 +17,8 @@
       "Bash(powershell -Command \"Get-ChildItem -Path ''dist-latest.zip'' | Select-Object Name, Length, LastWriteTime\")",
       "Bash(powershell -Command \"Get-ChildItem -Path ''dist-final.zip'' | Select-Object Name, Length, LastWriteTime\")",
       "Bash(powershell -Command \"Get-ChildItem -Path ''dist-final-complete.zip'' | Select-Object Name, Length, LastWriteTime\")",
-      "Bash(powershell -Command \"Get-ChildItem -Path ''local-jobs-platform\\dist-admin-redesign.zip'' | Select-Object Name, Length, LastWriteTime\")"
+      "Bash(powershell -Command \"Get-ChildItem -Path ''local-jobs-platform\\dist-admin-redesign.zip'' | Select-Object Name, Length, LastWriteTime\")",
+      "Bash(node -e \"const bcrypt = require(''bcryptjs''); bcrypt.hash(''Dv12062001@'', 10, (err, hash) => { console.log(''Hashed Password:'', hash); });\")"
     ],
     "deny": [],
     "ask": []

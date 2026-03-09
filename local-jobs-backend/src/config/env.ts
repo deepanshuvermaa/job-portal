@@ -72,7 +72,10 @@ export const config: EnvConfig = {
   FIREBASE_PROJECT_ID: getEnv('FIREBASE_PROJECT_ID', 'not-configured'),
   FIREBASE_SERVICE_ACCOUNT: getEnv('FIREBASE_SERVICE_ACCOUNT', '{}'),
 
-  ADMIN_PASSWORD: getEnv('ADMIN_PASSWORD', 'admin123'),
+  // IMPORTANT: Store bcrypt hash of admin password, not plain text
+  // Generate hash: bcrypt.hash('YourPassword', 10)
+  // Example hash for 'Dv12062001@': $2a$10$7YK1BdUphGMjZT/Ir7/tyOeMChIywDwYiGKUmpLtbEAClZg/2JIDC
+  ADMIN_PASSWORD: getEnv('ADMIN_PASSWORD', '$2a$10$7YK1BdUphGMjZT/Ir7/tyOeMChIywDwYiGKUmpLtbEAClZg/2JIDC'),
 
   RATE_LIMIT_WINDOW_MS: parseInt(getEnv('RATE_LIMIT_WINDOW_MS', '900000'), 10),
   RATE_LIMIT_MAX_REQUESTS: parseInt(getEnv('RATE_LIMIT_MAX_REQUESTS', '100'), 10),

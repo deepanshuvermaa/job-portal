@@ -3,8 +3,23 @@ Allow: /
 Allow: /auth/
 Allow: /employer/signup
 Allow: /worker/signup
+Allow: /worker/jobs
+Allow: /language
 
+# Block admin panel
 Disallow: /admin/
 Disallow: /api/
 
-Sitemap: https://example.com/sitemap.xml
+# Block user dashboards (authenticated pages)
+Disallow: /worker/dashboard
+Disallow: /employer/dashboard
+Disallow: /worker/applications
+Disallow: /employer/jobs/
+Disallow: /worker/profile/
+Disallow: /employer/profile/
+
+# Sitemap location
+Sitemap: https://deepanshuverma.site/local-job-portal/sitemap.xml
+
+# Crawl delay for respectful scraping
+Crawl-delay: 1

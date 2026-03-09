@@ -506,15 +506,25 @@ app.post('/api/auth/admin/login', async (req: Request, res: Response) => {
   try {
     const { password } = req.body;
 
-    if (password !== config.ADMIN_PASSWORD) {
+    // Import bcrypt for password comparison
+    const bcrypt = require('bcryptjs');
+
+    // Check if password matches using bcrypt
+    const isValidPassword = await bcrypt.compare(password, config.ADMIN_PASSWORD);
+
+    if (!isValidPassword) {
+      console.log('❌ Invalid admin login attempt');
       return ApiResponseUtil.unauthorized(res, 'Invalid admin credentials');
     }
+
+    console.log('✅ Admin login successful');
 
     // Generate admin token (using fixed admin ID)
     const tokens = JWTUtil.generateTokens('admin-user-id', 'admin');
 
     return ApiResponseUtil.success(res, { tokens, role: 'admin' });
   } catch (error: any) {
+    console.error('❌ Admin login error:', error);
     return ApiResponseUtil.error(res, error.message || 'Login failed');
   }
 });

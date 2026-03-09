@@ -1,23 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <!-- Homepage -->
   <url>
-    <loc>https://example.com/</loc>
+    <loc>https://deepanshuverma.site/local-job-portal/</loc>
+    <lastmod>2024-03-09</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- Authentication Pages -->
   <url>
-    <loc>https://example.com/auth/phone</loc>
+    <loc>https://deepanshuverma.site/local-job-portal/auth/phone</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://example.com/employer/signup</loc>
+    <loc>https://deepanshuverma.site/local-job-portal/auth/login</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Worker Pages -->
+  <url>
+    <loc>https://deepanshuverma.site/local-job-portal/worker/signup</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://example.com/worker/signup</loc>
+    <loc>https://deepanshuverma.site/local-job-portal/worker/jobs</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Employer Pages -->
+  <url>
+    <loc>https://deepanshuverma.site/local-job-portal/employer/signup</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Language Selection -->
+  <url>
+    <loc>https://deepanshuverma.site/local-job-portal/language</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>
