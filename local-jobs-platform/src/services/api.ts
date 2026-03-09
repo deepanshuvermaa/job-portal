@@ -67,6 +67,9 @@ const onTokenRefreshed = (token: string) => {
   refreshSubscribers = [];
 };
 
+let refreshAttempts = 0;
+const MAX_REFRESH_ATTEMPTS = 3;
+
 const refreshAccessToken = async (): Promise<string | null> => {
   try {
     const refreshToken = getStoredRefreshToken();
@@ -74,7 +77,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
       throw new Error('No refresh token available');
     }
 
-    console.log('🔄 Refreshing access token...');
+    console.log(`🔄 Refreshing access token... (attempt ${refreshAttempts + 1}/${MAX_REFRESH_ATTEMPTS})`);
 
     const response = await axios.post(`${API_BASE_URL}/api/firebase-auth/refresh-token`, {
       refreshToken,
@@ -87,12 +90,36 @@ const refreshAccessToken = async (): Promise<string | null> => {
     // Update stored tokens
     updateStoredTokens(accessToken, newRefreshToken);
 
+    // Reset attempt counter on success
+    refreshAttempts = 0;
+
     return accessToken;
-  } catch (error) {
-    console.error('❌ Token refresh failed:', error);
-    // Clear auth and force re-login
-    localStorage.removeItem('auth-storage');
-    window.location.href = '/auth/phone';
+  } catch (error: any) {
+    refreshAttempts++;
+
+    console.error(`❌ Token refresh failed (attempt ${refreshAttempts}/${MAX_REFRESH_ATTEMPTS}):`, error.message);
+
+    // Check if it's a network error (not authentication error)
+    const isNetworkError = !error.response || error.code === 'ERR_NETWORK';
+
+    if (isNetworkError && refreshAttempts < MAX_REFRESH_ATTEMPTS) {
+      console.log('🔄 Network error detected, will retry on next request');
+      return null; // Don't logout, just return null to fail this request
+    }
+
+    // If it's an auth error (401, 403) or we've exceeded retries, force re-login
+    if (error.response?.status === 401 || error.response?.status === 403 || refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+      console.log('🚪 Refresh token invalid or expired, forcing re-login');
+      refreshAttempts = 0; // Reset for next session
+      localStorage.removeItem('auth-storage');
+
+      // Only redirect if we're not already on an auth page
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith('/auth') && currentPath !== '/') {
+        window.location.href = '/auth/phone';
+      }
+    }
+
     return null;
   }
 };

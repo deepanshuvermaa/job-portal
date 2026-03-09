@@ -48,16 +48,19 @@ export const useAuthStore = create<AuthStore>()(
           pendingFirebaseToken: token,
         }),
 
-      login: (user, token, refreshToken) =>
+      login: (user, token, refreshToken) => {
+        console.log('🔐 User logged in, storing session');
         set({
           user,
           token,
           refreshToken: refreshToken ?? null,
           isAuthenticated: true,
           loading: false,
-        }),
+        });
+      },
 
-      logout: () =>
+      logout: () => {
+        console.log('🚪 User logged out, clearing session');
         set({
           user: null,
           token: null,
@@ -66,7 +69,8 @@ export const useAuthStore = create<AuthStore>()(
           loading: false,
           pendingPhone: null,
           pendingFirebaseToken: null,
-        }),
+        });
+      },
 
       setLoading: (loading) =>
         set({

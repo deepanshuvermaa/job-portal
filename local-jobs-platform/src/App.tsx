@@ -43,22 +43,67 @@ import { BrowseWorkers } from './pages/BrowseWorkers';
 import { AdminConnections } from './pages/AdminConnections';
 
 const App: React.FC = () => {
-  const { token, user, loading, setLoading, setUser } = useAuthStore();
+  const { token, user, loading, setLoading, setUser, logout } = useAuthStore();
 
+  // Track last validation time to avoid excessive API calls
+  const lastValidationRef = React.useRef<number>(0);
+  const validationIntervalRef = React.useRef<number | null>(null);
+
+  const validateSession = async (force = false) => {
+    const now = Date.now();
+    const timeSinceLastValidation = now - lastValidationRef.current;
+
+    // Skip if validated within last 2 minutes (unless forced)
+    if (!force && timeSinceLastValidation < 2 * 60 * 1000) {
+      return;
+    }
+
+    if (!token) return;
+
+    try {
+      console.log('🔍 Validating session...');
+      const currentUser = await loadCurrentUser();
+      setUser(currentUser);
+      lastValidationRef.current = now;
+      console.log('✅ Session valid');
+    } catch (error: any) {
+      console.error('❌ Session validation failed:', error);
+      // Only logout if it's not a network error (allow temporary network issues)
+      if (error?.response?.status === 401) {
+        console.log('🚪 Session expired, logging out');
+        logout();
+      }
+    }
+  };
+
+  // Initial hydration - validate user on app load
   useEffect(() => {
     let active = true;
 
     const hydrateUser = async () => {
-      if (!token || user || loading) return;
+      if (!token) return;
+
+      // If we already have a user and validated recently, skip
+      if (user && (Date.now() - lastValidationRef.current < 5 * 60 * 1000)) {
+        return;
+      }
+
       setLoading(true);
       try {
+        console.log('💧 Hydrating user session...');
         const currentUser = await loadCurrentUser();
         if (active) {
           setUser(currentUser);
+          lastValidationRef.current = Date.now();
+          console.log('✅ User hydrated:', currentUser.role);
         }
-      } catch (error) {
+      } catch (error: any) {
+        console.error('❌ Hydration failed:', error);
         if (active) {
-          setUser(null);
+          // Only clear session on 401, not on network errors
+          if (error?.response?.status === 401) {
+            setUser(null);
+          }
         }
       } finally {
         if (active) {
@@ -72,7 +117,59 @@ const App: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [token, user, loading, setLoading, setUser]);
+  }, [token, setLoading, setUser]);
+
+  // Periodic validation - check session every 5 minutes
+  useEffect(() => {
+    if (!token || !user) return;
+
+    console.log('⏰ Setting up periodic session validation (every 5 minutes)');
+
+    validationIntervalRef.current = setInterval(() => {
+      validateSession();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => {
+      if (validationIntervalRef.current) {
+        clearInterval(validationIntervalRef.current);
+        validationIntervalRef.current = null;
+      }
+    };
+  }, [token, user]);
+
+  // Visibility change listener - re-validate when user returns to tab
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('👁️ Tab became visible, validating session');
+        validateSession(true); // Force validation when returning to tab
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [token, user]);
+
+  // Online/offline listener - re-validate when connection restored
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const handleOnline = () => {
+      console.log('🌐 Connection restored, validating session');
+      validateSession(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [token, user]);
 
   return (
     <Routes>
