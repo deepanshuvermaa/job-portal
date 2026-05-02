@@ -125,7 +125,7 @@ export const EmployerProfileEdit: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
         <div className="max-w-3xl mx-auto">
           <p className="text-gray-500">Loading...</p>
         </div>
@@ -134,7 +134,7 @@ export const EmployerProfileEdit: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-3xl mx-auto space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">Edit Business Profile</h1>
 

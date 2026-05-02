@@ -115,8 +115,9 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
       // Only redirect if we're not already on an auth page
       const currentPath = window.location.pathname;
-      if (!currentPath.startsWith('/auth') && currentPath !== '/') {
-        window.location.href = '/auth/phone';
+      const basePath = import.meta.env.BASE_URL || '/';
+      if (!currentPath.includes('/auth') && currentPath !== basePath) {
+        window.location.href = `${basePath}auth/phone`;
       }
     }
 

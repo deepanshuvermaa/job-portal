@@ -148,7 +148,44 @@ router.post('/register/employer', async (req: Request, res: Response) => {
       .single();
 
     if (existingUser) {
-      return ApiResponseUtil.error(res, 'User already exists', 400);
+      // User exists — check if they already have an employer profile
+      const { data: existingProfile } = await supabase
+        .from('employer_profiles')
+        .select('*')
+        .eq('user_id', existingUser.id)
+        .single();
+
+      if (existingProfile) {
+        // Already fully registered, just log them in
+        const tokens = JWTUtil.generateTokens(existingUser.id, 'employer');
+        console.log('✅ Employer already registered, logging in');
+        return ApiResponseUtil.success(res, { user: existingUser, tokens });
+      }
+
+      // User record exists but no profile — create profile
+      const { error: profileError } = await supabase.from('employer_profiles').insert([
+        {
+          user_id: existingUser.id,
+          business_name,
+          business_type,
+          city,
+          state,
+          pincode,
+          address,
+          gst_number,
+          pan_number,
+          description,
+          industry,
+          employee_count,
+          verification_status: 'pending',
+        },
+      ]);
+
+      if (profileError) throw profileError;
+
+      const tokens = JWTUtil.generateTokens(existingUser.id, 'employer');
+      console.log('✅ Employer profile created for existing user');
+      return ApiResponseUtil.created(res, { user: existingUser, tokens });
     }
 
     // Create user record
@@ -241,7 +278,43 @@ router.post('/register/worker', async (req: Request, res: Response) => {
       .single();
 
     if (existingUser) {
-      return ApiResponseUtil.error(res, 'User already exists', 400);
+      // User exists — check if they already have a worker profile
+      const { data: existingProfile } = await supabase
+        .from('worker_profiles')
+        .select('*')
+        .eq('user_id', existingUser.id)
+        .single();
+
+      if (existingProfile) {
+        // Already fully registered, just log them in
+        const tokens = JWTUtil.generateTokens(existingUser.id, 'worker');
+        console.log('✅ Worker already registered, logging in');
+        return ApiResponseUtil.success(res, { user: existingUser, tokens });
+      }
+
+      // User record exists but no profile — create profile
+      const { error: profileError } = await supabase.from('worker_profiles').insert([
+        {
+          user_id: existingUser.id,
+          full_name,
+          city,
+          state,
+          pincode,
+          address,
+          skills: skills || [],
+          experience_years: experience_years || 0,
+          preferred_job_types: preferred_job_types || [],
+          preferred_locations: preferred_locations || [],
+          bio,
+          verification_status: 'pending',
+        },
+      ]);
+
+      if (profileError) throw profileError;
+
+      const tokens = JWTUtil.generateTokens(existingUser.id, 'worker');
+      console.log('✅ Worker profile created for existing user');
+      return ApiResponseUtil.created(res, { user: existingUser, tokens });
     }
 
     // Create user record

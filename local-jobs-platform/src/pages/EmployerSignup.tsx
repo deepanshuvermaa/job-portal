@@ -16,6 +16,7 @@ import { BUSINESS_TYPES } from '../utils/constants';
 import { validateGST, validatePAN } from '../utils/documentValidation';
 import { registerEmployer, loadCurrentUser } from '../services/auth';
 import { uploadEmployerDocument } from '../services/uploads';
+import { getFreshFirebaseToken } from '../services/firebase-auth';
 import { updateSEO, SEO_PRESETS } from '../utils/seo';
 
 const employerSchema = z.object({
@@ -51,7 +52,7 @@ type EmployerFormData = z.infer<typeof employerSchema>;
 export const EmployerSignup: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useAppStore();
-  const { login, pendingPhone, pendingFirebaseToken, setPendingPhone, setToken } = useAuthStore();
+  const { login, pendingPhone, pendingFirebaseToken, setPendingPhone, setToken, isAuthenticated, user } = useAuthStore();
   const { t } = useTranslation(language);
 
   const [businessProofFile, setBusinessProofFile] = useState<File | null>(null);
@@ -64,11 +65,20 @@ export const EmployerSignup: React.FC = () => {
     updateSEO(SEO_PRESETS.employer(language));
   }, [language]);
 
+  // Redirect if already authenticated
   useEffect(() => {
-    if (!pendingPhone) {
-      navigate('/auth/phone');
+    if (isAuthenticated && user) {
+      console.log('✅ User already registered, redirecting to dashboard');
+      if (user.role === 'employer') {
+        navigate('/employer/dashboard', { replace: true });
+      }
+      return;
     }
-  }, [pendingPhone, navigate]);
+
+    if (!pendingPhone) {
+      navigate('/auth/phone', { replace: true });
+    }
+  }, [pendingPhone, isAuthenticated, user, navigate]);
 
   const {
     register,
@@ -117,8 +127,11 @@ export const EmployerSignup: React.FC = () => {
         : 'company';
 
     try {
+      // Get fresh Firebase token (the pending one may have expired while filling form)
+      const freshToken = await getFreshFirebaseToken() || pendingFirebaseToken;
+
       const response = await registerEmployer({
-        firebaseToken: pendingFirebaseToken,
+        firebaseToken: freshToken,
         business_name: data.businessName,
         business_type: mappedBusinessType,
         industry: data.businessType,
@@ -141,7 +154,7 @@ export const EmployerSignup: React.FC = () => {
         await uploadEmployerDocument('business_license', businessProofFile);
       }
 
-      navigate('/employer/verification-pending');
+      navigate('/employer/verification-pending', { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to register employer');
     } finally {

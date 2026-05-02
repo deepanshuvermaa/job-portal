@@ -103,6 +103,20 @@ export const verifyFirebaseOTP = async (otp: string): Promise<string> => {
   }
 };
 
+// Get a fresh Firebase ID token (for registration after OTP was verified earlier)
+export const getFreshFirebaseToken = async (): Promise<string | null> => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+    // Force refresh to get a new token
+    const token = await currentUser.getIdToken(true);
+    return token;
+  } catch (error) {
+    console.error('Failed to get fresh Firebase token:', error);
+    return null;
+  }
+};
+
 // Clean up
 export const cleanupRecaptcha = () => {
   if (recaptchaVerifier) {

@@ -258,3 +258,13 @@
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+
+/* Bottom nav safe area */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Add padding for pages with bottom nav */
+.pb-nav {
+  padding-bottom: 5rem;
+}

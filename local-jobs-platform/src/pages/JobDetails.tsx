@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { Input } from '../components/shared/Input';
@@ -79,15 +80,22 @@ export const JobDetails: React.FC = () => {
         expected_salary: expectedSalary ? Number(expectedSalary) : null,
       });
       setSuccess('Application submitted successfully.');
+      toast.success('🎉 Application submitted successfully!');
+      toast('📞 Admin will review and connect you with the employer', {
+        icon: '⏳',
+        duration: 5000,
+      });
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to apply');
+      const errorMsg = err?.response?.data?.error || 'Failed to apply';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-4xl mx-auto space-y-6">
         {loading ? (
           <p className="text-gray-500">Loading job...</p>

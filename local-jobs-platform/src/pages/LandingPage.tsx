@@ -6,13 +6,24 @@ import {
   Zap, Target, Award, Globe
 } from 'lucide-react';
 import { Button } from '../components/shared/Button';
+import { useAuthStore } from '../store/authStore';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+
+  // Redirect authenticated users to their dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'worker') navigate('/worker/dashboard', { replace: true });
+      else if (user.role === 'employer') navigate('/employer/dashboard', { replace: true });
+      else if (user.role === 'admin') navigate('/admin/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -757,13 +768,7 @@ export const LandingPage: React.FC = () => {
           animation: fade-in-right 0.8s ease-out 0.2s both;
         }
 
-        html {
-          cursor: none;
-        }
-
-        button, a, input {
-          cursor: none;
-        }
+        /* Native cursors for accessibility */
       `}</style>
     </div>
   );

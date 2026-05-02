@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './store/authStore';
 import { loadCurrentUser } from './services/auth';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -41,6 +42,7 @@ import { AdminAllJobs } from './pages/AdminAllJobs';
 import { JobAlerts } from './pages/JobAlerts';
 import { BrowseWorkers } from './pages/BrowseWorkers';
 import { AdminConnections } from './pages/AdminConnections';
+import { BottomNav } from './components/BottomNav';
 
 const App: React.FC = () => {
   const { token, user, loading, setLoading, setUser, logout } = useAuthStore();
@@ -172,8 +174,33 @@ const App: React.FC = () => {
   }, [token, user]);
 
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
       <Route path="/language" element={<LanguageSelection />} />
       <Route path="/auth/login" element={<Login />} />
       <Route path="/auth/phone" element={<PhoneAuth />} />
@@ -227,7 +254,9 @@ const App: React.FC = () => {
       </Route>
 
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+      <BottomNav />
+    </>
   );
 };
 

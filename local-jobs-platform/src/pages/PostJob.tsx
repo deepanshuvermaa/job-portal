@@ -61,7 +61,7 @@ export const PostJob: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-3xl mx-auto">
         <Card>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Post a Job</h1>

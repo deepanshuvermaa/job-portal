@@ -43,8 +43,8 @@ export async function extractTextFromPDF(file: File): Promise<string> {
   try {
     const pdfjsLib = await import('pdfjs-dist');
 
-    // Set worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Set worker — use CDN with blob: fallback already allowed by CSP
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -63,7 +63,28 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     return fullText;
   } catch (error) {
     console.error('PDF parsing error:', error);
-    throw new Error('Failed to extract text from PDF');
+    // Fallback: try without worker (slower but works)
+    try {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+      return fullText;
+    } catch (fallbackError) {
+      console.error('PDF fallback also failed:', fallbackError);
+      throw new Error('Failed to extract text from PDF');
+    }
   }
 }
 

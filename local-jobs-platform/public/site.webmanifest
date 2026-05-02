@@ -1,0 +1,23 @@
+{
+  "name": "LocalJobs India - Hyperlocal Job Portal",
+  "short_name": "LocalJobs",
+  "description": "Find local jobs near you - Delivery, Driver, Mechanic, Helper jobs in Tier 2 & 3 cities",
+  "start_url": "/local-job-portal/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/local-job-portal/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/local-job-portal/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -17,6 +17,7 @@ import { processResume } from '../utils/ocr';
 import type { ExtractedResumeData } from '../utils/ocr';
 import { registerWorker, loadCurrentUser } from '../services/auth';
 import { uploadWorkerDocument } from '../services/uploads';
+import { getFreshFirebaseToken } from '../services/firebase-auth';
 import { updateSEO, SEO_PRESETS } from '../utils/seo';
 
 const workerSchema = z.object({
@@ -35,7 +36,7 @@ type WorkerFormData = z.infer<typeof workerSchema>;
 export const WorkerSignup: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useAppStore();
-  const { login, pendingPhone, pendingFirebaseToken, setPendingPhone, setToken } = useAuthStore();
+  const { login, pendingPhone, pendingFirebaseToken, setPendingPhone, setToken, isAuthenticated, user } = useAuthStore();
   const { t } = useTranslation(language);
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -51,11 +52,20 @@ export const WorkerSignup: React.FC = () => {
     updateSEO(SEO_PRESETS.worker(language));
   }, [language]);
 
+  // Redirect if already authenticated
   useEffect(() => {
-    if (!pendingPhone || !pendingFirebaseToken) {
-      navigate('/auth/phone');
+    if (isAuthenticated && user) {
+      console.log('✅ User already registered, redirecting to dashboard');
+      if (user.role === 'worker') {
+        navigate('/worker/dashboard', { replace: true });
+      }
+      return;
     }
-  }, [pendingPhone, pendingFirebaseToken, navigate]);
+
+    if (!pendingPhone || !pendingFirebaseToken) {
+      navigate('/auth/phone', { replace: true });
+    }
+  }, [pendingPhone, pendingFirebaseToken, isAuthenticated, user, navigate]);
 
   const {
     register,
@@ -132,8 +142,11 @@ export const WorkerSignup: React.FC = () => {
     setError('');
 
     try {
+      // Get fresh Firebase token (the pending one may have expired while filling form)
+      const freshToken = await getFreshFirebaseToken() || pendingFirebaseToken;
+
       const response = await registerWorker({
-        firebaseToken: pendingFirebaseToken,
+        firebaseToken: freshToken,
         full_name: data.name,
         address: `${data.area}, ${data.locality}`,
         city: data.city,
@@ -155,7 +168,7 @@ export const WorkerSignup: React.FC = () => {
         await uploadWorkerDocument('resume', resumeFile);
       }
 
-      navigate('/worker/dashboard');
+      navigate('/worker/dashboard', { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to register worker');
     } finally {

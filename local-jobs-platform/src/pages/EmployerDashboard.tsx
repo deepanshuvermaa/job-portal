@@ -4,8 +4,12 @@ import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { getEmployerJobs } from '../services/jobs';
 import { getEmployerProfile } from '../services/profiles';
+import { useAppStore } from '../store/appStore';
+import { useAuthStore } from '../store/authStore';
 
 export const EmployerDashboard: React.FC = () => {
+  const { language } = useAppStore();
+  const { logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
@@ -38,20 +42,31 @@ export const EmployerDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Employer Dashboard</h1>
-            <p className="text-gray-600">Welcome back{profile?.business_name ? `, ${profile.business_name}` : ''}.</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {language === 'hi' ? 'डैशबोर्ड' : 'Dashboard'}
+            </h1>
+            <p className="text-lg text-gray-600">
+              {language === 'hi'
+                ? `नमस्ते${profile?.business_name ? ` ${profile.business_name}` : ''}`
+                : `Welcome${profile?.business_name ? `, ${profile.business_name}` : ''}`}
+            </p>
           </div>
           <div className="flex gap-3">
             <Link to="/employer/post-job">
-              <Button variant="primary">Post a Job</Button>
+              <Button variant="primary" size="lg">
+                {language === 'hi' ? 'नौकरी पोस्ट करें' : 'Post a Job'}
+              </Button>
             </Link>
-            <Link to="/notifications">
-              <Button variant="outline">Notifications</Button>
-            </Link>
+            <button
+              onClick={logout}
+              className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 min-h-[48px]"
+            >
+              {language === 'hi' ? 'लॉगआउट' : 'Logout'}
+            </button>
           </div>
         </div>
 

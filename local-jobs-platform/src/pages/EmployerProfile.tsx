@@ -29,7 +29,7 @@ export const EmployerProfile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
         <div className="max-w-4xl mx-auto">
           <p className="text-gray-500">Loading profile...</p>
         </div>
@@ -39,7 +39,7 @@ export const EmployerProfile: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
         <div className="max-w-4xl mx-auto">
           <div className="p-4 bg-red-50 text-red-700 rounded-lg">{error}</div>
         </div>
@@ -49,7 +49,7 @@ export const EmployerProfile: React.FC = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50 px-4 py-8">
+      <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
         <div className="max-w-4xl mx-auto">
           <Card>
             <p className="text-gray-500">Profile not found</p>
@@ -60,7 +60,7 @@ export const EmployerProfile: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-gray-900">My Business Profile</h1>
