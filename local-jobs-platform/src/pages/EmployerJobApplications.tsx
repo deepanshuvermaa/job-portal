@@ -80,8 +80,8 @@ export const EmployerJobApplications: React.FC = () => {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1">
                       {/* Avatar */}
-                      {wp.profile_photo_url ? (
-                        <img src={wp.profile_photo_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
+                      {wp.photo_url ? (
+                        <img src={wp.photo_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
                       ) : (
                         <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
                           {(wp.full_name || 'W')[0].toUpperCase()}

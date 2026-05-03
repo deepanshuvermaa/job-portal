@@ -1,0 +1,78 @@
+1. Company Name
+LocalJobs India — Connecting local workers with local jobs
+
+2. What We Do
+LocalJobs is a hyperlocal job marketplace that connects workers with employers in Tier 2 & Tier 3 cities across India. Job seekers can find trusted jobs near them and apply instantly — no resume required, no fees, no middlemen.
+
+3. Top 10 FAQs
+Q1: How do I find local jobs near me?
+A: Sign up as a worker on LocalJobs, complete your profile, and browse jobs in your city. You can filter by area, job type, salary, and distance (2km–20km). Apply with one tap — no resume needed.
+
+Q2: Is LocalJobs free for workers?
+A: Yes, 100% free. Creating a profile, browsing jobs, applying, and connecting with employers costs nothing. No hidden fees.
+
+Q3: Is it free for employers to post jobs?
+A: Yes, employers can sign up, get verified, and post unlimited job listings at zero cost.
+
+Q4: What types of jobs are available?
+A: Delivery, Driver, Helper, Mechanic, Electrician, Plumber, Cook, Waiter, Cleaner, Security Guard, Sales, and Factory Worker positions across India.
+
+Q5: Do I need a resume to apply?
+A: No! Just complete your profile with your skills, experience, and availability. You can apply to any job with a single tap.
+
+Q6: How does verification work?
+A: Workers verify via Aadhaar document upload (OCR-processed). Employers verify with business documents (GST/PAN/License). Admin reviews and approves all profiles before they go live.
+
+Q7: How long does verification take?
+A: Typically within 24 hours. Once approved, you'll get full access to the platform.
+
+Q8: How do I contact an employer after applying?
+A: Once your application is shortlisted/selected, verified contact details are shared so you can connect directly with the employer — no middlemen.
+
+Q9: What languages does LocalJobs support?
+A: The platform supports Hindi, English, Marathi, Gujarati, Tamil, Telugu, Kannada, Bengali, and Punjabi.
+
+Q10: How many jobs can I apply to per day?
+A: Workers can apply to up to 10 jobs per day. Jobs remain active for 30 days after posting.
+
+4. Products/Services List
+Service	Description
+Job Search & Apply	Workers browse hyperlocal jobs filtered by city, area, distance, category, and salary — apply with one tap
+Instant Profile Creation	Create a worker profile with skills, experience, availability, and optional voice introduction (30-sec audio)
+Aadhaar Verification	AI-powered OCR document verification for worker identity validation
+Job Posting	Employers post jobs with details like salary, work type, location, benefits, and requirements
+Application Management	Employers view, shortlist, reject, or hire candidates through a dashboard
+Worker Directory	Employers browse verified worker profiles filtered by skills and location
+Admin Moderation	All jobs and profiles go through admin approval before going live — ensuring quality and trust
+Job Alerts & Notifications	Automated alerts when matching jobs are posted or application status changes
+Referral Program	Earn rewards by referring friends to the platform
+Multi-Language Support	Full interface in 9+ Indian languages
+5. Pricing Info
+Plan	Price	What's Included
+Worker (Job Seeker)	FREE	Profile creation, job browsing, apply to jobs, status tracking, alerts, referrals — everything
+Employer	FREE	Business profile, unlimited job posts, application management, worker browsing, analytics — everything
+No hidden fees. No premium plans. No middlemen commissions. The platform is completely free for all users.
+
+6. Contact Info
+Phone: 7499551650
+Website: https://deepanshuverma.site/local-job-portal/
+Support Hours: Available via platform
+Authentication: OTP-based phone verification (SMS via MSG91)
+Founded: 2024
+Location: India (serving Tier 2 & Tier 3 cities)
+7. Key Policies
+Policy	Details
+Verification	All worker and employer profiles require admin approval before platform access; Aadhaar-based identity verification for workers
+Job Approval	Every job posting is reviewed and approved by admin before becoming visible to workers
+Application Limits	Workers can apply to a maximum of 10 jobs per day
+Job Expiry	Posted jobs automatically expire after 30 days
+Data Security	JWT-based authentication (30-day token expiry), rate limiting, CORS protection, and encrypted communications
+Moderation	Users can report jobs or profiles; admin reviews and takes action including banning if necessary
+No Fees Policy	The platform charges zero fees to both workers and employers — no commissions, no hidden charges
+8. Unique Selling Points
+No Resume Required — Apply to jobs instantly with just your profile. No document hassles for blue-collar workers.
+Hyperlocal Focus — Find jobs within 2km–20km of your location in Tier 2 & Tier 3 Indian cities, not just metros.
+100% Free for Everyone — Zero fees for workers AND employers. No middlemen, no commissions.
+Verified & Trusted — Every profile and job goes through Aadhaar/document verification + admin approval, ensuring safety and trust.
+Multi-Language Support — Full platform available in 9+ Indian languages (Hindi, English, Marathi, Tamil, Telugu, etc.) making it accessible to all.
+Platform Stats: 500+ Active Jobs | 2,000+ Registered Workers | 150+ Active Employers | 4.5/5 Rating

@@ -592,7 +592,7 @@ app.post('/api/workers/upload-document',
 
       // Update profile — map documentType to correct column name
       const columnMap: Record<string, string> = {
-        'photo': 'profile_photo_url',
+        'photo': 'photo_url',
         'resume': 'resume_url',
         'aadhaar_front': 'aadhaar_front_url',
         'aadhaar_back': 'aadhaar_back_url',
@@ -1092,7 +1092,7 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
       const workerIds = [...new Set(apps.map(a => a.worker_id))];
       const [{ data: workers }, { data: users }] = await Promise.all([
         supabase.from('worker_profiles')
-          .select('user_id, full_name, city, state, skills, experience_years, profile_photo_url, bio, address, pincode, minimum_salary, joining_days, verification_status')
+          .select('user_id, full_name, city, state, skills, experience_years, photo_url, bio, address, pincode, minimum_salary, joining_days, verification_status')
           .in('user_id', workerIds),
         supabase.from('users').select('id, phone').in('id', workerIds),
       ]);
@@ -1109,7 +1109,7 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
             state: wp?.state || '',
             skills: wp?.skills || [],
             experience_years: wp?.experience_years || 0,
-            profile_photo_url: wp?.profile_photo_url || null,
+            photo_url: wp?.photo_url || null,
             bio: wp?.bio || '',
             address: wp?.address || '',
             minimum_salary: wp?.minimum_salary || null,

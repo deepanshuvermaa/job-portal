@@ -74,7 +74,7 @@ export const WorkerProfileEdit: React.FC = () => {
   const handlePhotoUpload = async (file: File) => {
     try {
       const result = await uploadWorkerDocument('photo', file);
-      setProfile((prev: any) => ({ ...prev, profile_photo_url: result.url }));
+      setProfile((prev: any) => ({ ...prev, photo_url: result.url }));
       setSuccess('Photo uploaded successfully');
     } catch (err) {
       setError('Failed to upload photo');
@@ -151,7 +151,7 @@ export const WorkerProfileEdit: React.FC = () => {
         <Card>
           <form onSubmit={handleSubmit} className="space-y-6">
             <ProfilePhotoUpload
-              currentPhotoUrl={profile?.profile_photo_url}
+              currentPhotoUrl={profile?.photo_url}
               onUpload={handlePhotoUpload}
               label="Profile Photo"
             />
