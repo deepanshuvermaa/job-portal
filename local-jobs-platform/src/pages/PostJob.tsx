@@ -134,7 +134,7 @@ export const PostJob: React.FC = () => {
         max_age: form.max_age ? Number(form.max_age) : null,
         qualification: form.qualification,
         gender_preference: form.gender_preference,
-        experience_required: form.experience_required,
+        experience_required: form.experience_required === 'fresher' ? 0 : form.experience_required === '1-2' ? 1 : form.experience_required === '3-5' ? 3 : form.experience_required === '5+' ? 5 : 0,
         contact_person: form.contact_person || null,
         interview_location: form.interview_location || null,
       });

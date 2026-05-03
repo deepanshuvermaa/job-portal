@@ -238,71 +238,130 @@ export const AdminDashboard: React.FC = () => {
 
           {/* Overview Tab */}
           {mainTab === 'overview' && stats && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setMainTab('workers')}>
-                  <p className="text-sm text-gray-500">Total Workers</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalWorkers}</p>
-                  <p className="text-xs text-yellow-600 mt-1">
-                    {allWorkers.filter(w => w.verification_status === 'pending').length} pending
-                  </p>
+            <div className="space-y-4">
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Card className="cursor-pointer hover:shadow-md" onClick={() => setMainTab('workers')}>
+                  <p className="text-xs text-gray-500">Workers</p>
+                  <p className="text-2xl font-bold">{stats.totalWorkers}</p>
+                  <p className="text-xs text-yellow-600">{allWorkers.filter(w => w.verification_status === 'pending').length} pending</p>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setMainTab('employers')}>
-                  <p className="text-sm text-gray-500">Total Employers</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalEmployers}</p>
-                  <p className="text-xs text-yellow-600 mt-1">
-                    {allEmployers.filter(e => e.verification_status === 'pending').length} pending
-                  </p>
+                <Card className="cursor-pointer hover:shadow-md" onClick={() => setMainTab('employers')}>
+                  <p className="text-xs text-gray-500">Employers</p>
+                  <p className="text-2xl font-bold">{stats.totalEmployers}</p>
+                  <p className="text-xs text-yellow-600">{allEmployers.filter(e => e.verification_status === 'pending').length} pending</p>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setMainTab('jobs')}>
-                  <p className="text-sm text-gray-500">Total Jobs</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalJobs}</p>
-                  <p className="text-xs text-yellow-600 mt-1">{jobs.length} pending approval</p>
+                <Card className="cursor-pointer hover:shadow-md" onClick={() => setMainTab('jobs')}>
+                  <p className="text-xs text-gray-500">Jobs</p>
+                  <p className="text-2xl font-bold">{stats.totalJobs}</p>
+                  <p className="text-xs text-yellow-600">{jobs.length} pending</p>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setMainTab('applications')}>
-                  <p className="text-sm text-gray-500">Applications</p>
-                  <p className="text-3xl font-bold text-gray-900">{stats.totalApplications}</p>
-                  <p className="text-xs text-blue-600 mt-1">Click to review</p>
+                <Card className="cursor-pointer hover:shadow-md" onClick={() => setMainTab('applications')}>
+                  <p className="text-xs text-gray-500">Applications</p>
+                  <p className="text-2xl font-bold">{stats.totalApplications}</p>
+                  <p className="text-xs"><span className="text-yellow-600">{applications.filter(a => a.status === 'pending').length} pending</span> · <span className="text-green-600">{applications.filter(a => a.status === 'hired').length} hired</span></p>
                 </Card>
               </div>
 
-              <Card>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setMainTab('workers')}
-                    className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="font-medium">Review Workers</div>
-                    <div className="text-sm text-gray-500">
-                      {allWorkers.filter(w => w.verification_status === 'pending').length} pending verification
+              {/* 🟢 HIRED — Connect Worker & Employer */}
+              {applications.filter(a => a.status === 'hired').length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-green-700 mb-3">🟢 Ready to Connect — Employer wants to Hire</h2>
+                  {applications.filter(a => a.status === 'hired').map((app: any) => (
+                    <div key={app.id} className="border-2 border-green-300 bg-green-50 rounded-xl p-4 mb-3">
+                      <div className="font-bold text-gray-900 mb-2">{app.worker?.full_name} → {app.job?.title}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-gray-500">👷 Worker</p>
+                          <p className="font-semibold">{app.worker?.full_name}</p>
+                          <p className="text-lg font-bold text-blue-600">📞 {app.worker?.phone || app.worker?.contact_phone || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{app.worker?.city}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-gray-500">🏢 Employer</p>
+                          <p className="font-semibold">{app.employer?.business_name}</p>
+                          <p className="text-lg font-bold text-blue-600">📞 {app.employer?.phone || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{app.job?.city}</p>
+                        </div>
+                      </div>
                     </div>
-                  </button>
-                  <button
-                    onClick={() => setMainTab('employers')}
-                    className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="font-medium">Review Employers</div>
-                    <div className="text-sm text-gray-500">
-                      {allEmployers.filter(e => e.verification_status === 'pending').length} pending verification
+                  ))}
+                </Card>
+              )}
+
+              {/* 🟡 Pending Applications */}
+              {applications.filter(a => a.status === 'pending').length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-yellow-700 mb-3">🟡 Pending Applications ({applications.filter(a => a.status === 'pending').length})</h2>
+                  {applications.filter(a => a.status === 'pending').map((app: any) => (
+                    <div key={app.id} className="border border-yellow-200 bg-yellow-50 rounded-lg p-3 mb-2 flex items-center justify-between gap-2 flex-wrap">
+                      <div>
+                        <span className="font-semibold">{app.worker?.full_name}</span>
+                        <span className="text-gray-400 mx-1">→</span>
+                        <span className="text-blue-600">{app.job?.title}</span>
+                        {app.expected_salary && <span className="text-sm text-gray-500 ml-2">(₹{app.expected_salary})</span>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={async () => { await api.put(`/api/admin/applications/${app.id}`, { action: 'approve' }); await loadData(); }} className="px-3 py-1.5 bg-green-600 text-white rounded text-sm font-medium">Approve</button>
+                        <button onClick={async () => { await api.put(`/api/admin/applications/${app.id}`, { action: 'reject' }); await loadData(); }} className="px-3 py-1.5 bg-red-600 text-white rounded text-sm font-medium">Reject</button>
+                      </div>
                     </div>
-                  </button>
-                  <button
-                    onClick={() => setMainTab('jobs')}
-                    className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="font-medium">Approve Jobs</div>
-                    <div className="text-sm text-gray-500">{jobs.length} jobs awaiting approval</div>
-                  </button>
-                  <button
-                    onClick={() => setMainTab('applications')}
-                    className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="font-medium">Review Applications</div>
-                    <div className="text-sm text-gray-500">{applications.length} total applications</div>
-                  </button>
-                </div>
-              </Card>
+                  ))}
+                </Card>
+              )}
+
+              {/* 🟠 Pending Jobs */}
+              {jobs.length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-orange-700 mb-3">🟠 Pending Jobs ({jobs.length})</h2>
+                  {jobs.map((job: any) => (
+                    <div key={job.id} className="border border-orange-200 bg-orange-50 rounded-lg p-3 mb-2 flex items-center justify-between gap-2 flex-wrap">
+                      <div><span className="font-semibold">{job.title}</span><span className="text-sm text-gray-500 ml-2">{job.city}</span></div>
+                      <div className="flex gap-2">
+                        <Button variant="primary" size="sm" onClick={() => handleJobAction(job.id, 'approve')}>Approve</Button>
+                        <Button variant="danger" size="sm" onClick={() => handleJobAction(job.id, 'reject')}>Reject</Button>
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
+              {/* 🟣 Pending Worker Verifications */}
+              {allWorkers.filter(w => w.verification_status === 'pending').length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-purple-700 mb-3">🟣 Pending Workers ({allWorkers.filter(w => w.verification_status === 'pending').length})</h2>
+                  {allWorkers.filter(w => w.verification_status === 'pending').map((w: any) => (
+                    <div key={w.user_id} className="border border-purple-200 bg-purple-50 rounded-lg p-3 mb-2 flex items-center justify-between gap-2 flex-wrap">
+                      <div><span className="font-semibold">{w.full_name || 'Unnamed'}</span><span className="text-sm text-gray-500 ml-2">{w.city} · {w.users?.phone}</span></div>
+                      <div className="flex gap-2">
+                        <Button variant="primary" size="sm" onClick={() => handleVerifyWorker(w.user_id, 'approved')}>Approve</Button>
+                        <Button variant="danger" size="sm" onClick={() => handleVerifyWorker(w.user_id, 'rejected')}>Reject</Button>
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
+              {/* 🔵 Pending Employer Verifications */}
+              {allEmployers.filter(e => e.verification_status === 'pending').length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-indigo-700 mb-3">🔵 Pending Employers ({allEmployers.filter(e => e.verification_status === 'pending').length})</h2>
+                  {allEmployers.filter(e => e.verification_status === 'pending').map((e: any) => (
+                    <div key={e.user_id} className="border border-indigo-200 bg-indigo-50 rounded-lg p-3 mb-2 flex items-center justify-between gap-2 flex-wrap">
+                      <div><span className="font-semibold">{e.business_name}</span><span className="text-sm text-gray-500 ml-2">{e.city} · {e.users?.phone}</span></div>
+                      <div className="flex gap-2">
+                        <Button variant="primary" size="sm" onClick={() => handleVerifyEmployer(e.user_id, 'approved')}>Approve</Button>
+                        <Button variant="danger" size="sm" onClick={() => handleVerifyEmployer(e.user_id, 'rejected')}>Reject</Button>
+                      </div>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
+              {/* All clear */}
+              {jobs.length === 0 && applications.filter(a => a.status === 'pending').length === 0 && applications.filter(a => a.status === 'hired').length === 0 && allWorkers.filter(w => w.verification_status === 'pending').length === 0 && allEmployers.filter(e => e.verification_status === 'pending').length === 0 && (
+                <Card><div className="text-center py-8"><p className="text-2xl mb-2">✅</p><p className="text-lg font-medium text-gray-700">All caught up!</p></div></Card>
+              )}
             </div>
           )}
 
