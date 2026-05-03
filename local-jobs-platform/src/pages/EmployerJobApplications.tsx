@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { getEmployerJobApplications, updateApplicationStatus } from '../services/jobs';
-import { bulkUpdateApplications } from '../services/jobManagement';
-import { CheckSquare, Square, User } from 'lucide-react';
+import { useAppStore } from '../store/appStore';
+import { MapPin, Briefcase, Star, Clock, Shield, ChevronDown, ChevronUp } from 'lucide-react';
 
 export const EmployerJobApplications: React.FC = () => {
   const { jobId } = useParams();
+  const { language } = useAppStore();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadApplications = async () => {
     if (!jobId) return;
@@ -36,208 +36,214 @@ export const EmployerJobApplications: React.FC = () => {
       await updateApplicationStatus(applicationId, { status });
       await loadApplications();
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to update application');
+      setError(err?.response?.data?.error || 'Failed to update');
     }
   };
 
-  const toggleSelection = (appId: string) => {
-    setSelectedIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(appId)) {
-        newSet.delete(appId);
-      } else {
-        newSet.add(appId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === applications.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(applications.map(app => app.id)));
-    }
-  };
-
-  const handleBulkAction = async (status: string) => {
-    if (selectedIds.size === 0) return;
-
-    setBulkActionLoading(true);
-    try {
-      await bulkUpdateApplications(Array.from(selectedIds), status);
-      setSelectedIds(new Set());
-      await loadApplications();
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to update applications');
-    } finally {
-      setBulkActionLoading(false);
-    }
-  };
-
-  const allSelected = applications.length > 0 && selectedIds.size === applications.length;
+  const hi = (hiText: string, enText: string) => language === 'hi' ? hiText : enText;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
-      <div className="max-w-5xl mx-auto space-y-4">
-        <h1 className="text-2xl font-bold text-gray-900">Applications</h1>
+    <div className="min-h-screen bg-gray-50 px-4 py-6 pb-24">
+      <div className="max-w-3xl mx-auto space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {hi('आवेदन', 'Applications')}
+        </h1>
+        <p className="text-gray-500 text-sm">
+          {hi('एडमिन द्वारा अप्रूव किए गए उम्मीदवार यहां दिखेंगे', 'Admin-approved candidates appear here')}
+        </p>
 
         {error && (
-          <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {selectedIds.size > 0 && (
-          <Card>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-gray-700">
-                {selectedIds.size} application{selectedIds.size !== 1 ? 's' : ''} selected
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('shortlisted')}
-                  loading={bulkActionLoading}
-                >
-                  Shortlist Selected
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleBulkAction('rejected')}
-                  loading={bulkActionLoading}
-                >
-                  Reject Selected
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleBulkAction('hired')}
-                  loading={bulkActionLoading}
-                >
-                  Hire Selected
-                </Button>
-              </div>
-            </div>
-          </Card>
+          <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">{error}</div>
         )}
 
         {loading ? (
-          <p className="text-gray-500">Loading applications...</p>
+          <p className="text-gray-500 py-8 text-center">{hi('लोड हो रहा है...', 'Loading...')}</p>
         ) : applications.length === 0 ? (
-          <p className="text-gray-500">No applications yet.</p>
-        ) : (
-          <>
-            <div className="flex items-center gap-3 px-2">
-              <button
-                onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                {allSelected ? (
-                  <CheckSquare size={20} className="text-primary-600" />
-                ) : (
-                  <Square size={20} className="text-gray-400" />
-                )}
-                Select All
-              </button>
+          <Card>
+            <div className="text-center py-12">
+              <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-lg text-gray-500">{hi('अभी कोई आवेदन नहीं', 'No applications yet')}</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {hi('जब एडमिन किसी आवेदन को अप्रूव करेगा, वह यहां दिखेगा', 'Applications will appear here after admin approval')}
+              </p>
             </div>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {applications.map((app) => {
+              const wp = app.worker_profiles || {};
+              const isExpanded = expandedId === app.id;
 
-            <div className="grid gap-4">
-              {applications.map((app) => {
-                const isSelected = selectedIds.has(app.id);
-                return (
-                  <Card key={app.id} className={isSelected ? 'ring-2 ring-primary-500' : ''}>
-                    <div className="flex items-start gap-4">
-                      <button
-                        onClick={() => toggleSelection(app.id)}
-                        className="flex-shrink-0 mt-1"
-                      >
-                        {isSelected ? (
-                          <CheckSquare size={20} className="text-primary-600" />
-                        ) : (
-                          <Square size={20} className="text-gray-400" />
-                        )}
-                      </button>
+              return (
+                <Card key={app.id}>
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1">
+                      {/* Avatar */}
+                      {wp.profile_photo_url ? (
+                        <img src={wp.profile_photo_url} alt="" className="w-14 h-14 rounded-full object-cover border-2 border-gray-200" />
+                      ) : (
+                        <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+                          {(wp.full_name || 'W')[0].toUpperCase()}
+                        </div>
+                      )}
 
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="font-semibold text-gray-900">
-                                {app.worker_profiles?.full_name || 'Worker'}
-                              </p>
-                              {app.worker_profiles?.user_id && (
-                                <Link
-                                  to={`/employer/workers/${app.worker_profiles.user_id}`}
-                                  className="text-xs text-primary-600 hover:underline"
-                                >
-                                  View Profile
-                                </Link>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                app.status === 'hired' ? 'bg-green-100 text-green-700' :
-                                app.status === 'shortlisted' ? 'bg-blue-100 text-blue-700' :
-                                app.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {app.status}
-                              </span>
-                              <span>Applied: {new Date(app.created_at).toLocaleDateString()}</span>
-                            </div>
-                            {app.cover_letter && (
-                              <p className="text-sm text-gray-700 line-clamp-2 mb-2">
-                                {app.cover_letter}
-                              </p>
-                            )}
-
-                            <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1 mt-2">
-                              <p className="text-xs text-blue-900">
-                                🔒 Resume & Contact Protected
-                              </p>
-                              <p className="text-xs text-blue-700 mt-1">
-                                Shortlist this candidate and wait for admin approval to view full details.
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStatusChange(app.id, 'shortlisted')}
-                              disabled={app.status === 'shortlisted'}
-                            >
-                              Shortlist
-                            </Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleStatusChange(app.id, 'rejected')}
-                              disabled={app.status === 'rejected'}
-                            >
-                              Reject
-                            </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleStatusChange(app.id, 'hired')}
-                              disabled={app.status === 'hired'}
-                            >
-                              Hire
-                            </Button>
-                          </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900 truncate">{wp.full_name}</h3>
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 mt-0.5">
+                          {wp.city && (
+                            <span className="flex items-center gap-1"><MapPin size={14} />{wp.city}</span>
+                          )}
+                          {wp.experience_years > 0 && (
+                            <span className="flex items-center gap-1"><Briefcase size={14} />{wp.experience_years} yrs</span>
+                          )}
+                          {wp.verification_status === 'approved' && (
+                            <span className="flex items-center gap-1 text-green-600"><Shield size={14} />Verified</span>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </>
+
+                    {/* Status badge */}
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                      app.status === 'hired' ? 'bg-green-100 text-green-700' :
+                      app.status === 'shortlisted' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {app.status === 'hired' ? hi('चयनित', 'Hired') :
+                       app.status === 'shortlisted' ? hi('शॉर्टलिस्ट', 'Shortlisted') :
+                       app.status}
+                    </span>
+                  </div>
+
+                  {/* Skills */}
+                  {wp.skills && wp.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {wp.skills.map((skill: string, i: number) => (
+                        <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg font-medium">{skill}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cover letter */}
+                  {app.cover_letter && (
+                    <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <p className="text-sm text-gray-500 font-medium mb-1">{hi('कवर लेटर', 'Cover Letter')}</p>
+                      <p className="text-sm text-gray-700">{app.cover_letter}</p>
+                    </div>
+                  )}
+
+                  {app.expected_salary && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {hi('अपेक्षित वेतन', 'Expected Salary')}: <strong>₹{app.expected_salary}</strong>
+                    </p>
+                  )}
+
+                  {/* Expand/collapse candidate details */}
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : app.id)}
+                    className="flex items-center gap-1 text-sm text-blue-600 font-medium mt-3 hover:text-blue-800"
+                  >
+                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {isExpanded
+                      ? hi('कम देखें', 'Show Less')
+                      : hi('उम्मीदवार की पूरी जानकारी देखें', 'View Full Candidate Details')}
+                  </button>
+
+                  {/* Expanded candidate profile */}
+                  {isExpanded && (
+                    <div className="mt-3 p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-3">
+                      <h4 className="font-bold text-gray-900">{hi('उम्मीदवार प्रोफाइल', 'Candidate Profile')}</h4>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-gray-500">{hi('शहर', 'City')}</span>
+                          <p className="font-medium text-gray-900">{wp.city || 'N/A'}{wp.state ? `, ${wp.state}` : ''}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">{hi('अनुभव', 'Experience')}</span>
+                          <p className="font-medium text-gray-900">{wp.experience_years || 0} {hi('वर्ष', 'years')}</p>
+                        </div>
+                        {wp.minimum_salary && (
+                          <div>
+                            <span className="text-gray-500">{hi('न्यूनतम वेतन', 'Min Salary')}</span>
+                            <p className="font-medium text-gray-900">₹{wp.minimum_salary}/month</p>
+                          </div>
+                        )}
+                        {wp.joining_days && (
+                          <div>
+                            <span className="text-gray-500">{hi('ज्वाइनिंग', 'Joining')}</span>
+                            <p className="font-medium text-gray-900">
+                              {wp.joining_days === 'immediate' ? hi('तुरंत', 'Immediately') :
+                               `${wp.joining_days} ${hi('दिन में', 'days')}`}
+                            </p>
+                          </div>
+                        )}
+                        {wp.address && (
+                          <div className="col-span-2">
+                            <span className="text-gray-500">{hi('पता', 'Address')}</span>
+                            <p className="font-medium text-gray-900">{wp.address}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {wp.bio && (
+                        <div>
+                          <span className="text-sm text-gray-500">{hi('परिचय', 'About')}</span>
+                          <p className="text-sm text-gray-800 mt-1">{wp.bio}</p>
+                        </div>
+                      )}
+
+                      {/* Contact info notice */}
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
+                        <p className="text-sm text-yellow-800 font-medium">
+                          🔒 {hi('फ़ोन नंबर और रिज़्यूमे सुरक्षित है', 'Phone & resume are protected')}
+                        </p>
+                        <p className="text-xs text-yellow-700 mt-1">
+                          {hi('"हायर करें" दबाएं, एडमिन आपको उम्मीदवार से जोड़ेगा',
+                              'Click "Hire" and admin will connect you with the candidate')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2 mt-4 pt-3 border-t">
+                    {app.status === 'shortlisted' && (
+                      <>
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          fullWidth
+                          onClick={() => handleStatusChange(app.id, 'hired')}
+                        >
+                          {hi('हायर करें / Interview', 'Hire / Interview')}
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleStatusChange(app.id, 'rejected')}
+                        >
+                          {hi('अस्वीकार', 'Reject')}
+                        </Button>
+                      </>
+                    )}
+                    {app.status === 'hired' && (
+                      <div className="w-full text-center py-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-green-700 font-semibold">
+                          ✅ {hi('चयनित — एडमिन जल्द संपर्क करवाएगा', 'Hired — Admin will connect you soon')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-400 mt-2">
+                    {hi('आवेदन', 'Applied')}: {new Date(app.created_at).toLocaleDateString()}
+                  </p>
+                </Card>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

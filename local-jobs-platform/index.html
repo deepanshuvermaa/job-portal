@@ -162,5 +162,19 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- AutoRAG Chat Widget -->
+    <script>
+    (function(){
+      var w=document.createElement('script');
+      w.src='https://rag-anything-production.up.railway.app/api/v1/widget/autorag-widget.js';
+      w.setAttribute('data-widget-id','fb5de688-0b81-4e5b-91be-547b625c392b');
+      w.setAttribute('data-dataset-id','cf1cfef7-ac55-47cf-97ec-4a332aef5790');
+      w.setAttribute('data-api-url','https://rag-anything-production.up.railway.app');
+      w.setAttribute('data-color','#000000');
+      w.setAttribute('data-position','bottom-right');
+      w.setAttribute('data-welcome','Hi! Ask me anything about our docs.');
+      document.body.appendChild(w);
+    })();
+    </script>
   </body>
 </html>

@@ -892,7 +892,13 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         )}
                         {app.status === 'shortlisted' && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Approved → Sent to Employer</span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">Approved → Employer Reviewing</span>
+                        )}
+                        {app.status === 'hired' && (
+                          <div className="flex flex-col gap-1 items-end">
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold">Employer wants to HIRE</span>
+                            <p className="text-[10px] text-gray-500">Connect them now — share contact</p>
+                          </div>
                         )}
                       </div>
                     </div>

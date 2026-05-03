@@ -1087,24 +1087,35 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
 
     if (error) throw error;
 
-    // Get worker profiles for these applications
+    // Get worker profiles + user phone for these applications
     if (apps && apps.length > 0) {
       const workerIds = [...new Set(apps.map(a => a.worker_id))];
-      const { data: workers } = await supabase
-        .from('worker_profiles')
-        .select('user_id, full_name, city, skills, experience_years, profile_photo_url')
-        .in('user_id', workerIds);
+      const [{ data: workers }, { data: users }] = await Promise.all([
+        supabase.from('worker_profiles')
+          .select('user_id, full_name, city, state, skills, experience_years, profile_photo_url, bio, address, pincode, minimum_salary, joining_days, verification_status')
+          .in('user_id', workerIds),
+        supabase.from('users').select('id, phone').in('id', workerIds),
+      ]);
 
       const enriched = apps.map(app => {
         const wp = workers?.find(w => w.user_id === app.worker_id);
+        const u = users?.find(u => u.id === app.worker_id);
+        const name = wp?.full_name && wp.full_name.trim() !== '' ? wp.full_name : `Worker (${u?.phone || 'Unknown'})`;
         return {
           ...app,
           worker_profiles: {
-            full_name: wp?.full_name || 'N/A',
+            full_name: name,
             city: wp?.city || '',
+            state: wp?.state || '',
             skills: wp?.skills || [],
             experience_years: wp?.experience_years || 0,
             profile_photo_url: wp?.profile_photo_url || null,
+            bio: wp?.bio || '',
+            address: wp?.address || '',
+            minimum_salary: wp?.minimum_salary || null,
+            joining_days: wp?.joining_days || null,
+            verification_status: wp?.verification_status || 'pending',
+            // NOTE: phone/email/resume NOT included — admin connects them
           },
         };
       });
