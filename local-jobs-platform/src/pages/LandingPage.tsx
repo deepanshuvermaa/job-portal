@@ -64,7 +64,7 @@ export const LandingPage: React.FC = () => {
           playsInline
           onCanPlay={() => setVideoLoaded(true)}
           className={`absolute inset-0 w-full h-full object-cover z-[1] transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
-          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260403_050628_c4e32401-fab4-4a27-b7a8-6e9291cd5959.mp4"
+          src={`${import.meta.env.BASE_URL}bgvideo.mp4`}
         />
 
         {/* Subtle gradient for text readability */}
@@ -450,6 +450,7 @@ export const LandingPage: React.FC = () => {
               Connecting local workers with local jobs
             </p>
             <p className="text-sm text-gray-600 mt-3">&copy; 2024 LocalJobs. All rights reserved.</p>
+            <a href="/local-job-portal/admin/login" className="text-xs text-gray-700 hover:text-gray-400 mt-2 inline-block">Admin</a>
           </div>
         </div>
       </footer>
