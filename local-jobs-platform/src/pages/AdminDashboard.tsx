@@ -858,14 +858,12 @@ export const AdminDashboard: React.FC = () => {
                           {app.expected_salary && <p className="text-sm text-gray-500 mt-1">Expected: ₹{app.expected_salary}</p>}
                           <div className="flex items-center gap-3 mt-2">
                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              app.status === 'admin_approved' ? 'bg-blue-100 text-blue-700' :
                               app.status === 'shortlisted' ? 'bg-green-100 text-green-700' :
                               app.status === 'rejected' ? 'bg-red-100 text-red-700' :
                               app.status === 'hired' ? 'bg-purple-100 text-purple-700' :
                               'bg-yellow-100 text-yellow-700'
                             }`}>
-                              {app.status === 'admin_approved' ? 'Approved → Employer' :
-                               app.status === 'shortlisted' ? 'Shortlisted by Employer' :
+                              {app.status === 'shortlisted' ? 'Approved → Employer' :
                                app.status === 'hired' ? 'Hired' :
                                app.status || 'pending'}
                             </span>
@@ -877,7 +875,7 @@ export const AdminDashboard: React.FC = () => {
                           <div className="flex flex-col gap-2">
                             <Button variant="primary" size="sm" onClick={async () => {
                               try {
-                                await api.put(`/api/admin/applications/${app.id}`, { status: 'admin_approved' });
+                                await api.put(`/api/admin/applications/${app.id}`, { action: 'approve' });
                                 await loadData();
                               } catch (e) { console.error(e); }
                             }}>
@@ -885,7 +883,7 @@ export const AdminDashboard: React.FC = () => {
                             </Button>
                             <Button variant="danger" size="sm" onClick={async () => {
                               try {
-                                await api.put(`/api/admin/applications/${app.id}`, { status: 'rejected' });
+                                await api.put(`/api/admin/applications/${app.id}`, { action: 'reject' });
                                 await loadData();
                               } catch (e) { console.error(e); }
                             }}>
@@ -893,11 +891,8 @@ export const AdminDashboard: React.FC = () => {
                             </Button>
                           </div>
                         )}
-                        {app.status === 'admin_approved' && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">Sent to Employer</span>
-                        )}
                         {app.status === 'shortlisted' && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Employer Shortlisted</span>
+                          <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">Approved → Sent to Employer</span>
                         )}
                       </div>
                     </div>

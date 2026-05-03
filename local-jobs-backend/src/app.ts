@@ -1077,12 +1077,12 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
   try {
     const { jobId } = req.params;
 
-    // Get applications - only show admin-approved, shortlisted, or hired
+    // Get applications - only show shortlisted (admin approved) or hired
     const { data: apps, error } = await supabase
       .from('applications')
       .select('*')
       .eq('job_id', jobId)
-      .in('status', ['admin_approved', 'shortlisted', 'hired'])
+      .in('status', ['shortlisted', 'hired'])
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -1888,24 +1888,29 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
 });
 
 // Admin: Approve/Reject Application (gate before employer sees it)
+// Approve = set to 'shortlisted' (employer can then see it)
+// Reject = set to 'rejected'
 app.put('/api/admin/applications/:applicationId', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {
     const { applicationId } = req.params;
-    const { status } = req.body; // 'admin_approved' or 'rejected'
+    const { action } = req.body; // 'approve' or 'reject'
+
+    if (!action || !['approve', 'reject'].includes(action)) {
+      return ApiResponseUtil.error(res, 'Action must be "approve" or "reject"', 400);
+    }
+
+    const newStatus = action === 'approve' ? 'shortlisted' : 'rejected';
 
     const { data, error } = await supabase
       .from('applications')
-      .update({
-        status,
-        status_updated_at: new Date().toISOString()
-      })
+      .update({ status: newStatus })
       .eq('id', applicationId)
       .select()
       .single();
 
     if (error) throw error;
 
-    console.log(`✅ Admin updated application ${applicationId} to ${status}`);
+    console.log(`✅ Admin ${action}d application ${applicationId} → ${newStatus}`);
 
     return ApiResponseUtil.success(res, data);
   } catch (error: any) {
