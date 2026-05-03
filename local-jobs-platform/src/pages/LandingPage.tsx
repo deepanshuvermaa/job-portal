@@ -1,22 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  Briefcase, Users, MapPin, TrendingUp, Shield, Clock,
-  CheckCircle, Star, Search, ArrowRight, Menu, X,
-  Zap, Target, Award, Globe
-} from 'lucide-react';
-import { Button } from '../components/shared/Button';
+import React, { useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+import { ArrowRight, Check, MapPin, Shield, Zap, Users, Briefcase, Phone, Search } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+
+// ─── Animation Components ────────────────────────────────────────
+
+const WordsPullUp: React.FC<{ text: string; className?: string; delay?: number }> = ({ text, className = '', delay = 0 }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true });
+  const words = text.split(' ');
+
+  return (
+    <div ref={ref} className={`flex flex-wrap ${className}`}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          className="inline-block mr-[0.25em]"
+          initial={{ y: 20, opacity: 0 }}
+          animate={isInView ? { y: 0, opacity: 1 } : {}}
+          transition={{ delay: delay + i * 0.08, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </div>
+  );
+};
+
+const AnimatedLetter: React.FC<{ char: string; progress: any; index: number; total: number }> = ({ char, progress, index, total }) => {
+  const charProgress = index / total;
+  const opacity = useTransform(progress, [charProgress - 0.1, charProgress + 0.05], [0.15, 1]);
+
+  return (
+    <motion.span style={{ opacity }} className="inline">
+      {char}
+    </motion.span>
+  );
+};
+
+const ScrollRevealText: React.FC<{ text: string; className?: string }> = ({ text, className = '' }) => {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start 0.85', 'end 0.25'],
+  });
+
+  const chars = text.split('');
+
+  return (
+    <p ref={ref} className={className}>
+      {chars.map((char, i) => (
+        <AnimatedLetter key={i} char={char} progress={scrollYProgress} index={i} total={chars.length} />
+      ))}
+    </p>
+  );
+};
+
+// ─── Main Landing Page ───────────────────────────────────────────
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
-  const [language, setLanguage] = useState<'en' | 'hi'>('en');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
 
-  // Redirect authenticated users to their dashboard
   useEffect(() => {
     if (isAuthenticated && user) {
       if (user.role === 'worker') navigate('/worker/dashboard', { replace: true });
@@ -25,744 +71,481 @@ export const LandingPage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setCursorPosition({ x: e.clientX, y: e.clientY });
-    };
+  const featuresRef = useRef<HTMLDivElement>(null);
+  const featuresInView = useInView(featuresRef, { once: true, margin: '-100px' });
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  const content = {
-    en: {
-      nav: {
-        features: 'Features',
-        howItWorks: 'How It Works',
-        about: 'About',
-        login: 'Login',
-        getStarted: 'Get Started'
-      },
-      hero: {
-        title: 'Find Local Jobs Near You',
-        subtitle: 'Connect with trusted employers in your area. Quick, simple, and secure.',
-        ctaPrimary: 'Find Jobs Now',
-        ctaSecondary: 'Post a Job',
-        stats: {
-          jobs: 'Active Jobs',
-          workers: 'Verified Workers',
-          employers: 'Trusted Employers'
-        }
-      },
-      features: {
-        title: 'Why Choose LocalJobs',
-        subtitle: 'Everything you need to find or hire local talent',
-        items: [
-          {
-            icon: MapPin,
-            title: 'Hyperlocal Matching',
-            description: 'Find jobs and workers in your exact neighborhood'
-          },
-          {
-            icon: Shield,
-            title: 'Verified Profiles',
-            description: 'All users verified with Aadhaar and documents'
-          },
-          {
-            icon: Zap,
-            title: 'Instant Connections',
-            description: 'Apply and hire within minutes, not days'
-          },
-          {
-            icon: Clock,
-            title: '24/7 Support',
-            description: 'Get help whenever you need it'
-          },
-          {
-            icon: Target,
-            title: 'Smart Matching',
-            description: 'AI-powered job recommendations'
-          },
-          {
-            icon: Award,
-            title: 'Quality Assured',
-            description: 'Ratings and reviews for transparency'
-          }
-        ]
-      },
-      howItWorks: {
-        title: 'How It Works',
-        subtitle: 'Get started in 3 simple steps',
-        worker: {
-          title: 'For Job Seekers',
-          steps: [
-            {
-              number: '01',
-              title: 'Create Profile',
-              description: 'Sign up with your phone and upload documents'
-            },
-            {
-              number: '02',
-              title: 'Browse Jobs',
-              description: 'Find local jobs matching your skills'
-            },
-            {
-              number: '03',
-              title: 'Get Hired',
-              description: 'Apply and connect with employers instantly'
-            }
-          ]
-        },
-        employer: {
-          title: 'For Employers',
-          steps: [
-            {
-              number: '01',
-              title: 'Post Job',
-              description: 'Create detailed job listings in minutes'
-            },
-            {
-              number: '02',
-              title: 'Review Candidates',
-              description: 'See verified worker profiles and applications'
-            },
-            {
-              number: '03',
-              title: 'Hire Fast',
-              description: 'Connect directly and hire the best talent'
-            }
-          ]
-        }
-      },
-      cta: {
-        title: 'Ready to Get Started?',
-        subtitle: 'Join thousands of workers and employers already using LocalJobs',
-        button: 'Start Now - It\'s Free'
-      },
-      footer: {
-        tagline: 'Connecting local workers with local jobs',
-        copyright: '© 2024 LocalJobs. All rights reserved.'
-      }
+  const featureCards = [
+    {
+      number: '01',
+      title: 'Smart Job Matching',
+      titleHi: 'स्मार्ट जॉब मिलान',
+      icon: Search,
+      items: [
+        { en: 'Skills-based matching algorithm', hi: 'कौशल-आधारित मिलान' },
+        { en: 'Location-aware job discovery', hi: 'लोकेशन के अनुसार नौकरी खोज' },
+        { en: 'Salary range filtering', hi: 'वेतन के अनुसार फ़िल्टर' },
+        { en: 'Experience-level fit scoring', hi: 'अनुभव स्तर स्कोरिंग' },
+      ],
     },
-    hi: {
-      nav: {
-        features: 'विशेषताएं',
-        howItWorks: 'कैसे काम करता है',
-        about: 'हमारे बारे में',
-        login: 'लॉगिन',
-        getStarted: 'शुरू करें'
-      },
-      hero: {
-        title: 'अपने पास नौकरी खोजें',
-        subtitle: 'अपने क्षेत्र में विश्वसनीय नियोक्ताओं से जुड़ें। त्वरित, सरल और सुरक्षित।',
-        ctaPrimary: 'नौकरी खोजें',
-        ctaSecondary: 'नौकरी पोस्ट करें',
-        stats: {
-          jobs: 'सक्रिय नौकरियां',
-          workers: 'सत्यापित कामगार',
-          employers: 'विश्वसनीय नियोक्ता'
-        }
-      },
-      features: {
-        title: 'LocalJobs क्यों चुनें',
-        subtitle: 'स्थानीय प्रतिभा खोजने या नियुक्त करने के लिए आवश्यक सब कुछ',
-        items: [
-          {
-            icon: MapPin,
-            title: 'हाइपरलोकल मिलान',
-            description: 'अपने पड़ोस में नौकरियां और कामगार खोजें'
-          },
-          {
-            icon: Shield,
-            title: 'सत्यापित प्रोफाइल',
-            description: 'आधार और दस्तावेजों से सभी उपयोगकर्ता सत्यापित'
-          },
-          {
-            icon: Zap,
-            title: 'तत्काल कनेक्शन',
-            description: 'मिनटों में आवेदन करें और नियुक्त करें'
-          },
-          {
-            icon: Clock,
-            title: '24/7 सहायता',
-            description: 'जब भी आवश्यकता हो सहायता प्राप्त करें'
-          },
-          {
-            icon: Target,
-            title: 'स्मार्ट मिलान',
-            description: 'AI-संचालित नौकरी सिफारिशें'
-          },
-          {
-            icon: Award,
-            title: 'गुणवत्ता आश्वासन',
-            description: 'पारदर्शिता के लिए रेटिंग और समीक्षाएं'
-          }
-        ]
-      },
-      howItWorks: {
-        title: 'कैसे काम करता है',
-        subtitle: '3 सरल चरणों में शुरू करें',
-        worker: {
-          title: 'नौकरी चाहने वालों के लिए',
-          steps: [
-            {
-              number: '01',
-              title: 'प्रोफाइल बनाएं',
-              description: 'अपने फोन से साइन अप करें और दस्तावेज अपलोड करें'
-            },
-            {
-              number: '02',
-              title: 'नौकरियां ब्राउज़ करें',
-              description: 'अपने कौशल से मेल खाने वाली स्थानीय नौकरियां खोजें'
-            },
-            {
-              number: '03',
-              title: 'नियुक्त हों',
-              description: 'तुरंत आवेदन करें और नियोक्ताओं से जुड़ें'
-            }
-          ]
-        },
-        employer: {
-          title: 'नियोक्ताओं के लिए',
-          steps: [
-            {
-              number: '01',
-              title: 'नौकरी पोस्ट करें',
-              description: 'मिनटों में विस्तृत नौकरी लिस्टिंग बनाएं'
-            },
-            {
-              number: '02',
-              title: 'उम्मीदवारों की समीक्षा करें',
-              description: 'सत्यापित कार्यकर्ता प्रोफाइल और आवेदन देखें'
-            },
-            {
-              number: '03',
-              title: 'तेजी से नियुक्त करें',
-              description: 'सीधे जुड़ें और सर्वश्रेष्ठ प्रतिभा को नियुक्त करें'
-            }
-          ]
-        }
-      },
-      cta: {
-        title: 'शुरू करने के लिए तैयार?',
-        subtitle: 'हजारों कामगारों और नियोक्ताओं से जुड़ें जो पहले से LocalJobs का उपयोग कर रहे हैं',
-        button: 'अभी शुरू करें - यह मुफ़्त है'
-      },
-      footer: {
-        tagline: 'स्थानीय कामगारों को स्थानीय नौकरियों से जोड़ना',
-        copyright: '© 2024 LocalJobs. सर्वाधिकार सुरक्षित।'
-      }
-    }
-  };
-
-  const t = content[language];
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: 'smooth' });
-    setMobileMenuOpen(false);
-  };
+    {
+      number: '02',
+      title: 'Verified Profiles',
+      titleHi: 'सत्यापित प्रोफाइल',
+      icon: Shield,
+      items: [
+        { en: 'Aadhaar & document verification', hi: 'आधार और दस्तावेज़ सत्यापन' },
+        { en: 'Business license checks', hi: 'बिजनेस लाइसेंस जांच' },
+        { en: 'Ratings & review system', hi: 'रेटिंग और समीक्षा प्रणाली' },
+      ],
+    },
+    {
+      number: '03',
+      title: 'Instant Apply',
+      titleHi: 'तुरंत आवेदन',
+      icon: Zap,
+      items: [
+        { en: 'One-tap job application', hi: 'एक टैप में आवेदन' },
+        { en: 'Resume auto-fill from photo', hi: 'फ़ोटो से रिज़्यूमे ऑटो-फ़िल' },
+        { en: 'Real-time application tracking', hi: 'रियल-टाइम आवेदन ट्रैकिंग' },
+      ],
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Custom Magnifying Glass Cursor */}
-      <div
-        className="pointer-events-none fixed z-50 transition-transform duration-100 ease-out"
-        style={{
-          left: `${cursorPosition.x}px`,
-          top: `${cursorPosition.y}px`,
-          transform: `translate(-50%, -50%) scale(${isHovering ? 1.2 : 1})`
-        }}
-      >
-        <div className="relative">
-          <Search
-            className="w-8 h-8 text-primary-600"
-            strokeWidth={2.5}
-          />
-          <div className="absolute inset-0 bg-primary-400/20 rounded-full blur-xl animate-pulse" />
-        </div>
-      </div>
+    <div className="bg-black text-[#E1E0CC] overflow-x-hidden">
 
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary-200/30 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent-200/20 rounded-full blur-3xl animate-float-delayed" />
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-primary-300/20 rounded-full blur-3xl animate-float-slow" />
-      </div>
+      {/* ═══════════════════ HERO SECTION ═══════════════════ */}
+      <section className="h-screen p-3 md:p-6">
+        <div className="relative w-full h-full rounded-2xl md:rounded-[2rem] overflow-hidden">
+          {/* Background gradient (fallback + overlay) */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-black to-purple-900/60 z-0" />
 
-      {/* Navigation */}
-      <nav className="relative z-40 bg-white/80 backdrop-blur-md border-b border-border sticky top-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-2 group cursor-pointer"
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
-            >
-              <div className="relative">
-                <Briefcase className="w-8 h-8 text-primary-600 transition-transform group-hover:scale-110 group-hover:rotate-12" />
-                <div className="absolute inset-0 bg-primary-400/20 rounded-full blur-lg group-hover:bg-primary-400/40 transition-all" />
-              </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-                LocalJobs
-              </span>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <button
-                onClick={() => scrollToSection('features')}
-                className="text-foreground hover:text-primary-600 transition-colors font-medium"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                {t.nav.features}
-              </button>
-              <button
-                onClick={() => scrollToSection('how-it-works')}
-                className="text-foreground hover:text-primary-600 transition-colors font-medium"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                {t.nav.howItWorks}
-              </button>
-
-              {/* Language Toggle */}
-              <div className="flex items-center bg-gray-100 rounded-full p-1">
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                    language === 'en'
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  EN
-                </button>
-                <button
-                  onClick={() => setLanguage('hi')}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                    language === 'hi'
-                      ? 'bg-white text-primary-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  हिं
-                </button>
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => navigate('/auth/phone')}
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                {t.nav.login}
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => navigate('/auth/phone')}
-                className="group relative overflow-hidden"
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                <span className="relative z-10">{t.nav.getStarted}</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-              </Button>
-            </div>
-
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+          {/* Animated background shapes */}
+          <div className="absolute inset-0 z-[1] overflow-hidden">
+            <div className="absolute -top-20 -left-20 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute top-1/2 right-0 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl" style={{ animation: 'pulse 4s ease-in-out infinite' }} />
+            <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" style={{ animation: 'pulse 6s ease-in-out infinite' }} />
           </div>
-        </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-t border-border">
-            <div className="px-4 py-4 space-y-3">
-              <button
-                onClick={() => scrollToSection('features')}
-                className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100"
-              >
-                {t.nav.features}
-              </button>
-              <button
-                onClick={() => scrollToSection('how-it-works')}
-                className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100"
-              >
-                {t.nav.howItWorks}
-              </button>
-              <div className="flex space-x-2 pt-2">
-                <Button variant="outline" fullWidth onClick={() => navigate('/auth/phone')}>
-                  {t.nav.login}
-                </Button>
-                <Button variant="primary" fullWidth onClick={() => navigate('/auth/phone')}>
-                  {t.nav.getStarted}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
+          {/* Noise overlay */}
+          <div className="absolute inset-0 z-[2] noise-overlay opacity-[0.5] mix-blend-overlay pointer-events-none" />
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="animate-fade-in-up">
-              <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                {t.hero.title}
-              </h1>
-              <p className="text-xl text-gray-600 mb-8">
-                {t.hero.subtitle}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  onClick={() => navigate('/auth/phone')}
-                  className="group relative overflow-hidden"
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  <span className="relative z-10 flex items-center">
-                    {t.hero.ctaPrimary}
-                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => navigate('/auth/phone')}
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  {t.hero.ctaSecondary}
-                </Button>
-              </div>
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 z-[3] bg-gradient-to-b from-black/40 via-transparent to-black/70" />
 
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-6 mt-12">
-                {[
-                  { label: t.hero.stats.jobs, value: '500+', icon: Briefcase },
-                  { label: t.hero.stats.workers, value: '2000+', icon: Users },
-                  { label: t.hero.stats.employers, value: '150+', icon: TrendingUp }
-                ].map((stat, index) => (
-                  <div
-                    key={index}
-                    className="text-center group cursor-pointer"
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
+          {/* Navbar */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
+            <div className="bg-black/90 backdrop-blur-sm rounded-b-2xl md:rounded-b-3xl px-4 py-2.5 md:px-8 md:py-3">
+              <div className="flex items-center gap-4 sm:gap-6 md:gap-12">
+                <span className="text-cream font-bold text-sm md:text-base">LocalJobs</span>
+                {['Features', 'How It Works', 'For Employers'].map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => document.getElementById(item.toLowerCase().replace(/\s/g, '-'))?.scrollIntoView({ behavior: 'smooth' })}
+                    className="text-[10px] sm:text-xs md:text-sm font-medium transition-colors hidden sm:block"
+                    style={{ color: 'rgba(225, 224, 204, 0.7)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#E1E0CC')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(225, 224, 204, 0.7)')}
                   >
-                    <div className="flex justify-center mb-2">
-                      <stat.icon className="w-8 h-8 text-primary-600 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="text-3xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
-                      {stat.value}
-                    </div>
-                    <div className="text-sm text-gray-600">{stat.label}</div>
-                  </div>
+                    {item}
+                  </button>
                 ))}
+                <button
+                  onClick={() => navigate('/auth/phone')}
+                  className="text-[10px] sm:text-xs md:text-sm font-bold text-black bg-cream px-3 py-1.5 rounded-full"
+                >
+                  Login
+                </button>
               </div>
             </div>
+          </div>
 
-            {/* 3D Illustration */}
-            <div className="relative animate-fade-in-right">
-              <div className="relative aspect-square max-w-lg mx-auto">
-                {/* Floating Cards Animation */}
-                <div className="absolute inset-0">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="absolute bg-white rounded-2xl shadow-2xl p-6 animate-float-card"
-                      style={{
-                        top: `${20 + i * 15}%`,
-                        left: `${10 + i * 15}%`,
-                        width: '200px',
-                        animationDelay: `${i * 0.2}s`,
-                        transform: `rotate(${i * 5 - 7.5}deg)`
-                      }}
-                    >
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                          <Briefcase className="w-6 h-6 text-primary-600" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="h-2 bg-gray-200 rounded w-20 mb-1" />
-                          <div className="h-2 bg-gray-100 rounded w-16" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="h-2 bg-gray-100 rounded" />
-                        <div className="h-2 bg-gray-100 rounded w-3/4" />
+          {/* Hero content — bottom aligned */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6 md:p-10 lg:p-14">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-end">
+              {/* Giant heading */}
+              <div className="lg:col-span-8">
+                <WordsPullUp
+                  text="Local Jobs"
+                  className="text-[18vw] sm:text-[16vw] md:text-[14vw] lg:text-[12vw] xl:text-[11vw] font-bold leading-[0.85] tracking-[-0.04em]"
+                />
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.6 }}
+                  className="text-cream/60 text-sm sm:text-base md:text-lg mt-2 font-light"
+                >
+                  अपने शहर में नौकरी पाएं
+                </motion.p>
+              </div>
+
+              {/* Right column — description + CTA */}
+              <div className="lg:col-span-4 space-y-4 sm:space-y-6 pb-2">
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  className="text-cream/70 text-xs sm:text-sm md:text-base leading-[1.3]"
+                >
+                  India's hyperlocal job platform connecting workers and employers in Tier 2 & 3 cities.
+                  No resume needed. Direct contact. Verified profiles.
+                </motion.p>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  className="text-cream/50 text-xs sm:text-sm leading-[1.3]"
+                >
+                  भारत का हाइपरलोकल जॉब प्लेटफॉर्म। बिना रिज़्यूमे के आवेदन करें। सीधा संपर्क। सत्यापित प्रोफाइल।
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex flex-col sm:flex-row gap-3"
+                >
+                  <button
+                    onClick={() => navigate('/auth/phone')}
+                    className="group inline-flex items-center gap-2 bg-cream text-black font-bold px-5 py-3 sm:px-6 sm:py-3.5 rounded-full text-sm sm:text-base hover:gap-3 transition-all min-h-[48px]"
+                  >
+                    <span>Find Jobs / नौकरी खोजें</span>
+                    <span className="bg-black rounded-full w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <ArrowRight className="w-4 h-4 text-cream" />
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/auth/phone')}
+                    className="inline-flex items-center justify-center gap-2 border border-cream/30 text-cream font-medium px-5 py-3 rounded-full text-sm hover:border-cream/60 transition-all min-h-[48px]"
+                  >
+                    Hire Workers / वर्कर ढूंढें
+                  </button>
+                </motion.div>
+
+                {/* Stats */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1, duration: 0.8 }}
+                  className="flex gap-6 pt-2"
+                >
+                  {[
+                    { value: '500+', label: 'Jobs', labelHi: 'नौकरियां' },
+                    { value: '2000+', label: 'Workers', labelHi: 'कामगार' },
+                    { value: '150+', label: 'Employers', labelHi: 'नियोक्ता' },
+                  ].map((stat, i) => (
+                    <div key={i} className="text-center">
+                      <div className="text-lg sm:text-xl font-bold text-cream">{stat.value}</div>
+                      <div className="text-[10px] sm:text-xs text-cream/50">{stat.label} / {stat.labelHi}</div>
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ ABOUT SECTION ═══════════════════ */}
+      <section id="how-it-works" className="bg-black py-16 sm:py-24 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-[#101010] rounded-3xl p-6 sm:p-10 md:p-16 text-center">
+            {/* Label */}
+            <motion.span
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-cream text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-8 block"
+            >
+              How It Works / कैसे काम करता है
+            </motion.span>
+
+            {/* Main heading with mixed styles */}
+            <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl max-w-4xl mx-auto leading-[0.95] mb-12">
+              <WordsPullUp
+                text="Your next opportunity is"
+                className="justify-center font-normal"
+              />
+              <WordsPullUp
+                text="right in your neighborhood."
+                className="justify-center font-serif italic mt-1"
+                delay={0.3}
+              />
+              <WordsPullUp
+                text="No travel. No middlemen. Direct connection."
+                className="justify-center font-normal mt-1 text-cream/60"
+                delay={0.5}
+              />
+            </div>
+
+            {/* Scroll reveal paragraph */}
+            <ScrollRevealText
+              text="LocalJobs is built for workers and employers in Tier 2 and Tier 3 cities across India. Whether you are a delivery driver in Lucknow, a mechanic in Indore, or a shop owner in Jaipur looking for helpers, we connect you directly. No agents. No fees. Just verified people finding verified jobs."
+              className="text-cream text-xs sm:text-sm md:text-base max-w-3xl mx-auto leading-relaxed mb-8"
+            />
+
+            <ScrollRevealText
+              text="LocalJobs उन कामगारों और नियोक्ताओं के लिए बनाया गया है जो टियर 2 और टियर 3 शहरों में रहते हैं। चाहे आप लखनऊ में डिलीवरी ड्राइवर हों, इंदौर में मैकेनिक, या जयपुर में दुकानदार - हम आपको सीधे जोड़ते हैं। कोई एजेंट नहीं। कोई फीस नहीं।"
+              className="text-cream/60 text-xs sm:text-sm max-w-3xl mx-auto leading-relaxed"
+            />
+
+            {/* Steps */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              {[
+                {
+                  step: '01',
+                  icon: Phone,
+                  title: 'Sign Up with Phone',
+                  titleHi: 'फ़ोन से साइन अप करें',
+                  desc: 'OTP verification. No email needed.',
+                  descHi: 'OTP सत्यापन। ईमेल की जरूरत नहीं।',
+                },
+                {
+                  step: '02',
+                  icon: Search,
+                  title: 'Find or Post Jobs',
+                  titleHi: 'नौकरी खोजें या पोस्ट करें',
+                  desc: 'Workers browse. Employers post. AI matches both.',
+                  descHi: 'कामगार खोजें। नियोक्ता पोस्ट करें। AI दोनों को जोड़े।',
+                },
+                {
+                  step: '03',
+                  icon: Users,
+                  title: 'Connect Directly',
+                  titleHi: 'सीधा संपर्क करें',
+                  desc: 'Verified contact sharing. No middlemen.',
+                  descHi: 'सत्यापित संपर्क। कोई बिचौलिया नहीं।',
+                },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className="bg-black/50 rounded-2xl p-6 text-center"
+                >
+                  <div className="w-14 h-14 bg-cream/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <item.icon className="w-7 h-7 text-cream" />
+                  </div>
+                  <div className="text-cream/40 text-xs mb-2">{item.step}</div>
+                  <h3 className="text-lg font-bold text-cream mb-1">{item.title}</h3>
+                  <p className="text-cream/50 text-sm mb-2">{item.titleHi}</p>
+                  <p className="text-cream/40 text-xs">{item.desc}</p>
+                  <p className="text-cream/30 text-xs">{item.descHi}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FEATURES SECTION ═══════════════════ */}
+      <section id="features" className="min-h-screen bg-black py-16 sm:py-24 px-4 sm:px-6 relative">
+        {/* Noise background */}
+        <div className="absolute inset-0 bg-noise opacity-[0.08] pointer-events-none" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Header */}
+          <div className="text-center mb-12 sm:mb-16">
+            <WordsPullUp
+              text="Built for workers and employers who mean business."
+              className="justify-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-normal max-w-4xl mx-auto"
+            />
+            <WordsPullUp
+              text="Simple tools. Real results. Zero fees."
+              className="justify-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-normal text-gray-500 mt-2"
+              delay={0.3}
+            />
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+              className="text-cream/40 text-sm sm:text-base mt-4 max-w-xl mx-auto"
+            >
+              कामगारों और नियोक्ताओं के लिए बनाया गया। सरल टूल्स। असली नतीजे। शून्य शुल्क।
+            </motion.p>
+          </div>
+
+          {/* Feature cards grid */}
+          <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Card 1 — Hero visual card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={featuresInView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              className="lg:row-span-1 bg-gradient-to-br from-blue-900/40 to-purple-900/30 rounded-2xl overflow-hidden relative min-h-[280px] lg:min-h-0 flex items-end"
+            >
+              {/* Decorative elements */}
+              <div className="absolute inset-0">
+                <div className="absolute top-6 left-6">
+                  <Briefcase className="w-16 h-16 text-cream/10" />
+                </div>
+                <div className="absolute top-1/2 right-8 -translate-y-1/2">
+                  <Search className="w-32 h-32 text-cream/5" strokeWidth={1} />
+                </div>
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
+                  <MapPin className="w-20 h-20 text-cream/8" />
+                </div>
+              </div>
+              <div className="relative z-10 p-5 sm:p-6">
+                <p className="text-cream text-lg sm:text-xl font-bold leading-tight">
+                  Your local job marketplace.
+                </p>
+                <p className="text-cream/50 text-sm mt-1">
+                  आपका स्थानीय नौकरी बाज़ार।
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Feature cards 2-4 */}
+            {featureCards.map((card, i) => (
+              <motion.div
+                key={card.number}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={featuresInView ? { opacity: 1, scale: 1 } : {}}
+                transition={{ delay: (i + 1) * 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="bg-[#212121] rounded-2xl p-5 sm:p-6 flex flex-col"
+              >
+                {/* Icon */}
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-cream/10 rounded-xl flex items-center justify-center mb-4">
+                  <card.icon className="w-5 h-5 sm:w-6 sm:h-6 text-cream" />
+                </div>
+
+                {/* Title with number */}
+                <div className="mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-cream">
+                    {card.title}
+                    <span className="text-cream/30 text-xs ml-2">({card.number})</span>
+                  </h3>
+                  <p className="text-cream/40 text-xs sm:text-sm">{card.titleHi}</p>
+                </div>
+
+                {/* Checklist */}
+                <div className="space-y-2.5 flex-1">
+                  {card.items.map((item, j) => (
+                    <div key={j} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-cream/70 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="text-gray-400 text-xs sm:text-sm block">{item.en}</span>
+                        <span className="text-gray-500 text-[10px] sm:text-xs block">{item.hi}</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Central Icon */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <div className="relative">
-                    <div className="w-32 h-32 bg-primary-600 rounded-3xl flex items-center justify-center transform rotate-12 animate-pulse-scale">
-                      <Search className="w-16 h-16 text-white" strokeWidth={2} />
-                    </div>
-                    <div className="absolute inset-0 bg-primary-400 rounded-3xl blur-2xl opacity-50 animate-pulse" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              {t.features.title}
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              {t.features.subtitle}
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {t.features.items.map((feature, index) => (
-              <div
-                key={index}
-                className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2"
-                style={{ animationDelay: `${index * 0.1}s` }}
-                onMouseEnter={() => setIsHovering(true)}
-                onMouseLeave={() => setIsHovering(false)}
-              >
-                <div className="mb-6 relative inline-block">
-                  <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center group-hover:bg-primary-600 transition-colors">
-                    <feature.icon className="w-8 h-8 text-primary-600 group-hover:text-white transition-colors" />
-                  </div>
-                  <div className="absolute inset-0 bg-primary-400/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600">
-                  {feature.description}
-                </p>
-              </div>
+                {/* Learn more */}
+                <button
+                  onClick={() => navigate('/auth/phone')}
+                  className="mt-4 inline-flex items-center gap-1 text-cream/60 text-xs sm:text-sm hover:text-cream transition-colors group"
+                >
+                  Get Started
+                  <ArrowRight className="w-3 h-3 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </button>
+              </motion.div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              {t.howItWorks.title}
-            </h2>
-            <p className="text-xl text-gray-600">
-              {t.howItWorks.subtitle}
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Worker Steps */}
-            <div className="space-y-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <Users className="w-8 h-8 mr-3 text-primary-600" />
-                {t.howItWorks.worker.title}
-              </h3>
-              {t.howItWorks.worker.steps.map((step, index) => (
-                <div
-                  key={index}
-                  className="flex gap-6 group cursor-pointer"
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-primary-600 text-white flex items-center justify-center text-2xl font-bold group-hover:scale-110 transition-transform">
-                      {step.number}
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-2">
-                    <h4 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
-                      {step.title}
-                    </h4>
-                    <p className="text-gray-600">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Employer Steps */}
-            <div className="space-y-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <Briefcase className="w-8 h-8 mr-3 text-primary-600" />
-                {t.howItWorks.employer.title}
-              </h3>
-              {t.howItWorks.employer.steps.map((step, index) => (
-                <div
-                  key={index}
-                  className="flex gap-6 group cursor-pointer"
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  <div className="flex-shrink-0">
-                    <div className="w-16 h-16 rounded-2xl bg-accent text-white flex items-center justify-center text-2xl font-bold group-hover:scale-110 transition-transform">
-                      {step.number}
-                    </div>
-                  </div>
-                  <div className="flex-1 pt-2">
-                    <h4 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-accent transition-colors">
-                      {step.title}
-                    </h4>
-                    <p className="text-gray-600">
-                      {step.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-600 to-primary-800 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
-        </div>
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-            {t.cta.title}
-          </h2>
-          <p className="text-xl text-primary-100 mb-8">
-            {t.cta.subtitle}
-          </p>
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => navigate('/auth/phone')}
-            className="bg-white text-primary-600 hover:bg-gray-100 group"
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
+          {/* Job categories showcase */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="mt-8 bg-[#101010] rounded-2xl p-6 sm:p-8"
           >
-            <span className="flex items-center">
-              {t.cta.button}
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </span>
-          </Button>
+            <h3 className="text-cream text-lg sm:text-xl font-bold mb-2">Available Job Categories / उपलब्ध नौकरियां</h3>
+            <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
+              {[
+                { en: 'Delivery', hi: 'डिलीवरी' },
+                { en: 'Driver', hi: 'ड्राइवर' },
+                { en: 'Mechanic', hi: 'मैकेनिक' },
+                { en: 'Helper', hi: 'हेल्पर' },
+                { en: 'Security', hi: 'सुरक्षा' },
+                { en: 'Cook', hi: 'रसोइया' },
+                { en: 'Electrician', hi: 'इलेक्ट्रीशियन' },
+                { en: 'Plumber', hi: 'प्लंबर' },
+                { en: 'Sales', hi: 'सेल्स' },
+                { en: 'Cleaner', hi: 'सफाई' },
+                { en: 'Tailor', hi: 'दर्जी' },
+                { en: 'Painter', hi: 'पेंटर' },
+              ].map((cat, i) => (
+                <span
+                  key={i}
+                  className="px-3 py-2 sm:px-4 sm:py-2.5 bg-cream/5 hover:bg-cream/10 rounded-full text-cream/70 text-xs sm:text-sm font-medium transition-colors cursor-default"
+                >
+                  {cat.en} / {cat.hi}
+                </span>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <Briefcase className="w-8 h-8 text-primary-400" />
-              <span className="text-2xl font-bold text-white">LocalJobs</span>
-            </div>
-            <div className="text-center md:text-right">
-              <p className="text-gray-400 mb-2">{t.footer.tagline}</p>
-              <p className="text-sm text-gray-500">{t.footer.copyright}</p>
-              {/* Admin login accessible directly at /admin/login */}
-            </div>
+      {/* ═══════════════════ CTA SECTION ═══════════════════ */}
+      <section id="for-employers" className="bg-black py-16 sm:py-24 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <WordsPullUp
+            text="Ready to find your next opportunity?"
+            className="justify-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold"
+          />
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            className="text-cream/50 text-base sm:text-lg mt-4 mb-3"
+          >
+            Join thousands of workers and employers already on LocalJobs.
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="text-cream/35 text-sm sm:text-base mb-8"
+          >
+            हज़ारों कामगार और नियोक्ता पहले से LocalJobs पर हैं। अभी शुरू करें — यह मुफ़्त है।
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <button
+              onClick={() => navigate('/auth/phone')}
+              className="group inline-flex items-center justify-center gap-2 bg-cream text-black font-bold px-8 py-4 rounded-full text-base sm:text-lg hover:gap-3 transition-all min-h-[56px]"
+            >
+              <span>Start Now / अभी शुरू करें</span>
+              <span className="bg-black rounded-full w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-cream" />
+              </span>
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FOOTER ═══════════════════ */}
+      <footer className="bg-[#0a0a0a] border-t border-cream/10 py-8 sm:py-12 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Briefcase className="w-6 h-6 text-cream/60" />
+            <span className="text-lg font-bold text-cream">LocalJobs</span>
+          </div>
+          <div className="text-center md:text-right">
+            <p className="text-cream/30 text-sm">
+              Connecting local workers with local jobs / स्थानीय कामगारों को स्थानीय नौकरियों से जोड़ना
+            </p>
+            <p className="text-cream/20 text-xs mt-2">&copy; 2024 LocalJobs. All rights reserved.</p>
           </div>
         </div>
       </footer>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-30px) rotate(-5deg); }
-        }
-
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0) rotate(0deg); }
-          50% { transform: translateY(-15px) rotate(3deg); }
-        }
-
-        @keyframes float-card {
-          0%, 100% { transform: translateY(0) rotate(var(--rotation)); }
-          50% { transform: translateY(-15px) rotate(var(--rotation)); }
-        }
-
-        @keyframes pulse-scale {
-          0%, 100% { transform: rotate(12deg) scale(1); }
-          50% { transform: rotate(12deg) scale(1.05); }
-        }
-
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes fade-in-right {
-          from {
-            opacity: 0;
-            transform: translateX(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-
-        .animate-float-delayed {
-          animation: float-delayed 8s ease-in-out infinite;
-        }
-
-        .animate-float-slow {
-          animation: float-slow 10s ease-in-out infinite;
-        }
-
-        .animate-float-card {
-          animation: float-card 4s ease-in-out infinite;
-        }
-
-        .animate-pulse-scale {
-          animation: pulse-scale 3s ease-in-out infinite;
-        }
-
-        .animate-fade-in-up {
-          animation: fade-in-up 0.8s ease-out;
-        }
-
-        .animate-fade-in-right {
-          animation: fade-in-right 0.8s ease-out 0.2s both;
-        }
-
-        /* Native cursors for accessibility */
-      `}</style>
     </div>
   );
 };

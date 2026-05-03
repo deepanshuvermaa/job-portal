@@ -6,7 +6,12 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Almarai"', '"Noto Sans Devanagari"', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'serif'],
+      },
       colors: {
+        cream: '#DEDBC8',
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         card: {
