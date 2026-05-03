@@ -715,6 +715,18 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
       return ApiResponseUtil.error(res, 'Daily application limit reached (10 applications per day)');
     }
 
+    // Check if already applied
+    const { data: existingApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('worker_id', req.user!.userId)
+      .maybeSingle();
+
+    if (existingApp) {
+      return ApiResponseUtil.error(res, 'You have already applied to this job', 409);
+    }
+
     // Get job details to find employer_id
     const { data: jobData } = await supabase
       .from('jobs')
@@ -735,24 +747,29 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
 
     // AUTO-CREATE CONNECTION REQUEST when worker applies
     if (jobData?.employer_id) {
-      // Check if connection already exists
+      // Check if connection already exists for this specific application
       const { data: existingConnection } = await supabase
         .from('connections')
         .select('id, status')
-        .eq('worker_id', req.user!.userId)
-        .eq('employer_id', jobData.employer_id)
+        .eq('application_id', applicationData.id)
         .maybeSingle();
 
       if (!existingConnection) {
-        await supabase.from('connections').insert({
+        const { error: connError } = await supabase.from('connections').insert({
           application_id: applicationData.id,
           worker_id: req.user!.userId,
           employer_id: jobData.employer_id,
+          job_id: jobId,
           status: 'pending'
         });
-        console.log(`📨 Auto-created connection request: worker=${req.user!.userId}, employer=${jobData.employer_id}`);
+
+        if (connError) {
+          console.error(`❌ Failed to create connection request:`, connError);
+        } else {
+          console.log(`✅ Auto-created connection request: worker=${req.user!.userId}, employer=${jobData.employer_id}, job=${jobId}`);
+        }
       } else {
-        console.log(`📌 Connection already exists with status: ${existingConnection.status}`);
+        console.log(`📌 Connection already exists for this application with status: ${existingConnection.status}`);
       }
     }
 

@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { VerificationBadge } from '../components/shared/VerificationBadge';
 import { getEmployerProfile } from '../services/profiles';
 import { Building2, MapPin, Mail, Phone, FileText } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { useAppStore } from '../store/appStore';
 
 export const EmployerProfile: React.FC = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
+  const { language } = useAppStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,10 +68,20 @@ export const EmployerProfile: React.FC = () => {
     <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-900">My Business Profile</h1>
-          <Link to="/employer/profile/edit">
-            <Button variant="outline">Edit Profile</Button>
-          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {language === 'hi' ? 'मेरा बिजनेस प्रोफाइल' : 'My Business Profile'}
+          </h1>
+          <div className="flex gap-2">
+            <Link to="/employer/profile/edit">
+              <Button variant="outline">{language === 'hi' ? 'संपादित करें' : 'Edit'}</Button>
+            </Link>
+            <button
+              onClick={() => { logout(); navigate('/', { replace: true }); }}
+              className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-medium min-h-[48px]"
+            >
+              {language === 'hi' ? 'लॉगआउट' : 'Logout'}
+            </button>
+          </div>
         </div>
 
         <Card>

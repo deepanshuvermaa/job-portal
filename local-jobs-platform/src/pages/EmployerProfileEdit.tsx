@@ -111,7 +111,6 @@ export const EmployerProfileEdit: React.FC = () => {
         employee_count: formData.employee_count,
         gst_number: formData.gst_number,
         pan_number: formData.pan_number,
-        alternate_phones: formData.alternate_phones
       });
 
       setSuccess('Profile updated successfully');

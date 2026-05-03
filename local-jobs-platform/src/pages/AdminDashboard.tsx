@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { getAdminDashboard, getPendingJobs, getPendingVerifications, approveJob, rejectJob, verifyWorker, verifyEmployer } from '../services/admin';
+import { useAuthStore } from '../store/authStore';
 
 type TabType = 'pending' | 'approved' | 'rejected' | 'all';
 type MainTabType = 'overview' | 'workers' | 'employers' | 'jobs' | 'connections';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { logout } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [allWorkers, setAllWorkers] = useState<any[]>([]);
   const [allEmployers, setAllEmployers] = useState<any[]>([]);
@@ -91,8 +93,14 @@ export const AdminDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white border-b px-6 py-4">
+        <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <button
+            onClick={() => { logout(); navigate('/', { replace: true }); }}
+            className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-medium min-h-[44px]"
+          >
+            Logout
+          </button>
         </div>
 
         {/* Main Navigation Tabs */}

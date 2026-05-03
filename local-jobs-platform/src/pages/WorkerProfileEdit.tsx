@@ -7,9 +7,13 @@ import { ProfilePhotoUpload } from '../components/shared/ProfilePhotoUpload';
 import { getWorkerProfile, updateWorkerProfile } from '../services/profiles';
 import { uploadWorkerDocument } from '../services/uploads';
 import { JOB_CATEGORIES } from '../utils/constants';
+import { useAuthStore } from '../store/authStore';
+import { useAppStore } from '../store/appStore';
 
 export const WorkerProfileEdit: React.FC = () => {
   const navigate = useNavigate();
+  const { logout } = useAuthStore();
+  const { language } = useAppStore();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -108,7 +112,6 @@ export const WorkerProfileEdit: React.FC = () => {
         bio: formData.bio,
         experience_years: Number(formData.experience_years),
         skills: formData.skills,
-        alternate_phones: formData.alternate_phones
       });
 
       setSuccess('Profile updated successfully');
@@ -133,7 +136,17 @@ export const WorkerProfileEdit: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
       <div className="max-w-3xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">
+            {language === 'hi' ? 'प्रोफाइल संपादित करें' : 'Edit Profile'}
+          </h1>
+          <button
+            onClick={() => { logout(); navigate('/', { replace: true }); }}
+            className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 font-medium min-h-[48px]"
+          >
+            {language === 'hi' ? 'लॉगआउट' : 'Logout'}
+          </button>
+        </div>
 
         {error && (
           <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
