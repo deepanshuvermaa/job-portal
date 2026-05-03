@@ -29,9 +29,32 @@
   * {
     @apply border-border;
   }
+
+  /* Prevent horizontal overflow on mobile */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Geist', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Ensure all containers respect viewport on mobile */
+  .card, .glass-card, form, textarea, input, select {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Fix grids on small screens */
+  @media (max-width: 640px) {
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .grid-cols-3 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 }
 

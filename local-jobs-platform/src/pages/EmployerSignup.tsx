@@ -22,6 +22,7 @@ import { updateSEO, SEO_PRESETS } from '../utils/seo';
 const employerSchema = z.object({
   businessName: z.string().min(2, 'Business name must be at least 2 characters'),
   businessType: z.string().min(1, 'Please select business type'),
+  contactPhone: z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit phone required'),
   gstNumber: z.string().optional(),
   panNumber: z.string().optional(),
   address: z.string().min(5, 'Address must be at least 5 characters'),
@@ -134,6 +135,7 @@ export const EmployerSignup: React.FC = () => {
         firebaseToken: freshToken,
         business_name: data.businessName,
         business_type: mappedBusinessType,
+        contact_phone: data.contactPhone,
         industry: data.businessType,
         address: `${data.address}, ${data.area}, ${data.locality}`,
         city: data.city,
@@ -233,6 +235,17 @@ export const EmployerSignup: React.FC = () => {
               placeholder={language === 'hi' ? 'बिजनेस का नाम' : 'Enter your business name'}
               {...register('businessName')}
               error={errors.businessName?.message}
+              required
+            />
+
+            <Input
+              label={language === 'hi' ? 'संपर्क नंबर' : 'Contact Phone'}
+              placeholder="9876543210"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              {...register('contactPhone')}
+              error={errors.contactPhone?.message}
               required
             />
 

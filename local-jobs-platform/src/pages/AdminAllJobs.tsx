@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
-import { getAllJobs } from '../services/admin';
-import { Briefcase, MapPin, Calendar } from 'lucide-react';
+import { getAllJobs, approveJob, rejectJob } from '../services/admin';
+import { Briefcase, MapPin, Calendar, CheckCircle, XCircle } from 'lucide-react';
 
 export const AdminAllJobs: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -13,13 +12,15 @@ export const AdminAllJobs: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadJobs();
-  }, [cityFilter, statusFilter, page]);
+  }, [statusFilter, page]);
 
   const loadJobs = async () => {
     setLoading(true);
+    setError('');
     try {
       const data = await getAllJobs(cityFilter || undefined, statusFilter || undefined, page, 20);
       if (page === 1) {
@@ -29,13 +30,37 @@ export const AdminAllJobs: React.FC = () => {
       }
       setHasMore(data && data.length === 20);
     } catch (err: any) {
-      setError('Failed to load jobs');
+      setError(err?.response?.data?.error || 'Failed to load jobs');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFilterChange = () => {
+  const handleApprove = async (jobId: string) => {
+    setActionLoading(jobId);
+    try {
+      await approveJob(jobId);
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'open' } : j));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to approve job');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (jobId: string) => {
+    setActionLoading(jobId);
+    try {
+      await rejectJob(jobId);
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: 'rejected' } : j));
+    } catch (err: any) {
+      setError(err?.response?.data?.error || 'Failed to reject job');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleFilterApply = () => {
     setPage(1);
     setJobs([]);
     loadJobs();
@@ -43,71 +68,66 @@ export const AdminAllJobs: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-700';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'closed':
-        return 'bg-gray-100 text-gray-700';
-      case 'rejected':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+      case 'open': return 'bg-green-100 text-green-700';
+      case 'draft': return 'bg-yellow-100 text-yellow-700';
+      case 'closed': return 'bg-gray-100 text-gray-700';
+      case 'rejected': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'open': return 'Approved';
+      case 'draft': return 'Pending';
+      case 'closed': return 'Closed';
+      case 'rejected': return 'Rejected';
+      default: return status;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Jobs</h1>
-          <p className="text-gray-600">View and manage all job postings</p>
-        </div>
+    <div className="min-h-screen bg-gray-50 px-4 py-8 pb-24">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">All Jobs</h1>
 
+        {/* Filters */}
         <Card>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
               <input
                 type="text"
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
                 placeholder="Filter by city..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-base"
               />
             </div>
-
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <div className="flex-1">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-base bg-white"
               >
                 <option value="">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="pending">Pending</option>
+                <option value="open">Approved (Open)</option>
+                <option value="draft">Pending (Draft)</option>
                 <option value="closed">Closed</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-
-            <div className="flex items-end">
-              <Button variant="primary" onClick={handleFilterChange}>
-                Apply Filters
-              </Button>
-            </div>
+            <Button variant="primary" onClick={handleFilterApply} className="min-h-[44px]">
+              Filter
+            </Button>
           </div>
         </Card>
 
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-            {error}
-          </div>
+          <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
         )}
 
         {loading && page === 1 ? (
-          <p className="text-gray-500">Loading jobs...</p>
+          <p className="text-gray-500 text-center py-8">Loading jobs...</p>
         ) : jobs.length === 0 ? (
           <Card>
             <div className="text-center py-12">
@@ -117,77 +137,72 @@ export const AdminAllJobs: React.FC = () => {
           </Card>
         ) : (
           <>
-            <div className="grid gap-4">
-              {jobs.map((job) => (
-                <Card key={job.id}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(job.status)}`}>
-                          {job.status}
-                        </span>
-                      </div>
-
-                      <p className="text-sm text-gray-700 line-clamp-2 mb-3">
-                        {job.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
-                        <div className="flex items-center gap-1">
-                          <MapPin size={16} />
-                          {job.city}, {job.state}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Briefcase size={16} />
-                          {job.employment_type}
-                        </div>
-                        {(job.salary_min || job.salary_max) && (
-                          <span>
-                            ₹{job.salary_min || 0} - ₹{job.salary_max || 0}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <Calendar size={16} />
-                          Posted: {new Date(job.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-
-                      {job.employer_profiles && (
-                        <div className="text-sm text-gray-600">
-                          <strong>Employer:</strong> {job.employer_profiles.business_name || 'Unknown'}
-                          {job.employer_profiles.user?.phone && (
-                            <> • {job.employer_profiles.user.phone}</>
-                          )}
-                        </div>
-                      )}
-
-                      {job.rejection_reason && (
-                        <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                          <strong>Rejection Reason:</strong> {job.rejection_reason}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <Link to={`/worker/jobs/${job.id}`}>
-                        <Button variant="outline" size="sm">
-                          View Job
-                        </Button>
-                      </Link>
-                    </div>
+            {jobs.map((job) => (
+              <Card key={job.id}>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900 flex-1 break-words">{job.title}</h3>
+                    <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${getStatusColor(job.status)}`}>
+                      {getStatusLabel(job.status)}
+                    </span>
                   </div>
-                </Card>
-              ))}
-            </div>
+
+                  {job.description && (
+                    <p className="text-sm text-gray-600 line-clamp-2 break-words">{job.description}</p>
+                  )}
+
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+                    {job.city && (
+                      <span className="flex items-center gap-1">
+                        <MapPin size={14} /> {job.city}
+                      </span>
+                    )}
+                    {job.employment_type && (
+                      <span className="flex items-center gap-1">
+                        <Briefcase size={14} /> {job.employment_type}
+                      </span>
+                    )}
+                    {(job.salary_min || job.salary_max) && (
+                      <span>₹{job.salary_min || 0} - ₹{job.salary_max || 0}</span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar size={14} /> {new Date(job.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  {job.employer && (
+                    <p className="text-sm text-gray-600">
+                      <strong>Employer:</strong> {job.employer.business_name || 'Unknown'}
+                      {job.employer.city && <> — {job.employer.city}</>}
+                    </p>
+                  )}
+
+                  {/* Action buttons for draft jobs */}
+                  {job.status === 'draft' && (
+                    <div className="flex gap-2 pt-2 border-t">
+                      <button
+                        onClick={() => handleApprove(job.id)}
+                        disabled={actionLoading === job.id}
+                        className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 min-h-[44px] disabled:opacity-50"
+                      >
+                        <CheckCircle size={16} /> Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(job.id)}
+                        disabled={actionLoading === job.id}
+                        className="flex items-center gap-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 min-h-[44px] disabled:opacity-50"
+                      >
+                        <XCircle size={16} /> Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
 
             {hasMore && (
-              <div className="text-center">
-                <Button
-                  variant="outline"
-                  onClick={() => setPage(p => p + 1)}
-                  loading={loading}
-                >
+              <div className="text-center py-4">
+                <Button variant="outline" onClick={() => setPage(p => p + 1)} loading={loading}>
                   Load More
                 </Button>
               </div>

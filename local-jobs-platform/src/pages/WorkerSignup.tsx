@@ -22,8 +22,11 @@ import { updateSEO, SEO_PRESETS } from '../utils/seo';
 
 const workerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
+  contact_phone: z.string().regex(/^[6-9]\d{9}$/, 'Valid 10-digit phone required'),
   skills: z.array(z.string()).min(1, 'Select at least one skill'),
   experience: z.string().min(1, 'Please select experience level'),
+  minimum_salary: z.string().min(1, 'Minimum salary is required'),
+  joining_days: z.string().min(1, 'Joining availability is required'),
   availability: z.array(z.string()).min(1, 'Select at least one availability option'),
   languages: z.array(z.string()).min(1, 'Select at least one language'),
   city: z.string().min(2, 'City is required'),
@@ -148,10 +151,13 @@ export const WorkerSignup: React.FC = () => {
       const response = await registerWorker({
         firebaseToken: freshToken,
         full_name: data.name,
+        contact_phone: data.contact_phone,
         address: `${data.area}, ${data.locality}`,
         city: data.city,
         skills: data.skills,
         experience_years: data.experience === 'fresher' ? 0 : data.experience === '1-2' ? 1 : data.experience === '3-5' ? 3 : 5,
+        minimum_salary: parseInt(data.minimum_salary) || 0,
+        joining_days: data.joining_days,
         preferred_job_types: data.availability,
         preferred_locations: [data.city],
       });
@@ -281,6 +287,17 @@ export const WorkerSignup: React.FC = () => {
               required
             />
 
+            <Input
+              label={language === 'hi' ? 'संपर्क नंबर' : 'Contact Phone'}
+              placeholder="9876543210"
+              type="tel"
+              inputMode="numeric"
+              maxLength={10}
+              {...register('contact_phone')}
+              error={errors.contact_phone?.message}
+              required
+            />
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-3">
                 {t('worker.selectSkills')} <span className="text-red-500">*</span>
@@ -341,6 +358,38 @@ export const WorkerSignup: React.FC = () => {
               {errors.experience && (
                 <p className="mt-2 text-sm text-red-600">{errors.experience.message}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={language === 'hi' ? 'न्यूनतम वेतन (₹/महीना)' : 'Minimum Salary (₹/month)'}
+                placeholder="10000"
+                type="number"
+                inputMode="numeric"
+                {...register('minimum_salary')}
+                error={errors.minimum_salary?.message}
+                required
+              />
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {language === 'hi' ? 'कितने दिन में जॉइन कर सकते हैं' : 'Can join within'} <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base bg-white"
+                  {...register('joining_days')}
+                >
+                  <option value="">{language === 'hi' ? 'चुनें' : 'Select'}</option>
+                  <option value="immediate">{language === 'hi' ? 'तुरंत' : 'Immediately'}</option>
+                  <option value="3">{language === 'hi' ? '3 दिन में' : 'Within 3 days'}</option>
+                  <option value="7">{language === 'hi' ? '1 हफ्ते में' : 'Within 1 week'}</option>
+                  <option value="15">{language === 'hi' ? '15 दिन में' : 'Within 15 days'}</option>
+                  <option value="30">{language === 'hi' ? '1 महीने में' : 'Within 1 month'}</option>
+                </select>
+                {errors.joining_days && (
+                  <p className="mt-1 text-sm text-red-600">{errors.joining_days.message}</p>
+                )}
+              </div>
             </div>
 
             <div>

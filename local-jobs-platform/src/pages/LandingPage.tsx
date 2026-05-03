@@ -679,14 +679,7 @@ export const LandingPage: React.FC = () => {
             <div className="text-center md:text-right">
               <p className="text-gray-400 mb-2">{t.footer.tagline}</p>
               <p className="text-sm text-gray-500">{t.footer.copyright}</p>
-              <div className="mt-3">
-                <Link
-                  to="/admin/login"
-                  className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
-                >
-                  Admin Login
-                </Link>
-              </div>
+              {/* Admin login accessible directly at /admin/login */}
             </div>
           </div>
         </div>

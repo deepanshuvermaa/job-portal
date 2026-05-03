@@ -637,6 +637,8 @@ app.post('/api/employers/upload-document',
       if (documentType === 'gst_certificate') updateData.gst_certificate_url = result.secure_url;
       if (documentType === 'business_license') updateData.business_license_url = result.secure_url;
       if (documentType === 'pan_card') updateData.pan_card_url = result.secure_url;
+      if (documentType === 'visiting_card') updateData.visiting_card_url = result.secure_url;
+      if (documentType === 'business_logo') updateData.company_logo_url = result.secure_url;
 
       await supabase
         .from('employer_profiles')
