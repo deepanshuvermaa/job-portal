@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { getAdminDashboard, getPendingJobs, getAllJobs, getAllApplications, getPendingVerifications, approveJob, rejectJob, verifyWorker, verifyEmployer } from '../services/admin';
+import { api } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 
 type TabType = 'pending' | 'approved' | 'rejected' | 'all';
@@ -792,8 +793,9 @@ export const AdminDashboard: React.FC = () => {
                     <div key={app.id} className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-gray-900">{app.worker?.full_name || 'Unknown Worker'}</span>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-semibold text-gray-900">{app.worker?.full_name || 'N/A'}</span>
+                            {app.worker?.phone && <span className="text-sm text-gray-500">({app.worker.phone})</span>}
                             <span className="text-gray-400">→</span>
                             <span className="font-medium text-blue-600">{app.job?.title || 'Unknown Job'}</span>
                           </div>
@@ -815,6 +817,27 @@ export const AdminDashboard: React.FC = () => {
                             <span className="text-xs text-gray-400">Applied: {new Date(app.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
+                        {/* Action buttons */}
+                        {app.status === 'pending' && (
+                          <div className="flex flex-col gap-2">
+                            <Button variant="primary" size="sm" onClick={async () => {
+                              try {
+                                await api.put(`/api/employers/applications/${app.id}`, { status: 'shortlisted' });
+                                await loadData();
+                              } catch (e) { console.error(e); }
+                            }}>
+                              Shortlist
+                            </Button>
+                            <Button variant="danger" size="sm" onClick={async () => {
+                              try {
+                                await api.put(`/api/employers/applications/${app.id}`, { status: 'rejected' });
+                                await loadData();
+                              } catch (e) { console.error(e); }
+                            }}>
+                              Reject
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

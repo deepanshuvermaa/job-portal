@@ -590,9 +590,15 @@ app.post('/api/workers/upload-document',
         ocrData = await OCRService.processDocument(req.file.buffer);
       }
 
-      // Update profile
+      // Update profile — map documentType to correct column name
+      const columnMap: Record<string, string> = {
+        'photo': 'profile_photo_url',
+        'resume': 'resume_url',
+        'aadhaar_front': 'aadhaar_front_url',
+        'aadhaar_back': 'aadhaar_back_url',
+      };
       const updateData: any = {
-        [`${documentType}_url`]: result.secure_url
+        [columnMap[documentType] || `${documentType}_url`]: result.secure_url
       };
 
       if (ocrData) {
@@ -1058,8 +1064,8 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
   }
 });
 
-// Update Application Status
-app.put('/api/employers/applications/:applicationId', authenticate, authorize('employer'), async (req: Request, res: Response) => {
+// Update Application Status (employer or admin)
+app.put('/api/employers/applications/:applicationId', authenticate, authorize('employer', 'admin'), async (req: Request, res: Response) => {
   try {
     const { applicationId } = req.params;
     const { status, employer_notes, interview_scheduled_at, interview_location } = req.body;
@@ -1788,9 +1794,10 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
       const workerIds = [...new Set(apps.map(a => a.worker_id))];
       const jobIds = [...new Set(apps.map(a => a.job_id))];
 
-      const [{ data: workers }, { data: jobs }] = await Promise.all([
+      const [{ data: workers }, { data: jobs }, { data: users }] = await Promise.all([
         supabase.from('worker_profiles').select('user_id, full_name, city, skills, contact_phone').in('user_id', workerIds),
         supabase.from('jobs').select('id, title, city, employer_id').in('id', jobIds),
+        supabase.from('users').select('id, phone').in('id', workerIds),
       ]);
 
       // Get employer names for jobs
@@ -1800,12 +1807,22 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
         .select('user_id, business_name')
         .in('user_id', employerIds);
 
-      const enriched = apps.map(app => ({
-        ...app,
-        worker: workers?.find(w => w.user_id === app.worker_id) || null,
-        job: jobs?.find(j => j.id === app.job_id) || null,
-        employer: employers?.find(e => e.user_id === jobs?.find(j => j.id === app.job_id)?.employer_id) || null,
-      }));
+      const enriched = apps.map(app => {
+        const workerProfile = workers?.find(w => w.user_id === app.worker_id);
+        const userRecord = users?.find(u => u.id === app.worker_id);
+        return {
+          ...app,
+          worker: {
+            full_name: workerProfile?.full_name || 'N/A',
+            city: workerProfile?.city || '',
+            skills: workerProfile?.skills || [],
+            contact_phone: workerProfile?.contact_phone || userRecord?.phone || '',
+            phone: userRecord?.phone || '',
+          },
+          job: jobs?.find(j => j.id === app.job_id) || null,
+          employer: employers?.find(e => e.user_id === jobs?.find(j => j.id === app.job_id)?.employer_id) || null,
+        };
+      });
 
       return ApiResponseUtil.paginated(res, enriched, +page, +limit, count || 0);
     }
