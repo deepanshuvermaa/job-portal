@@ -291,7 +291,25 @@ router.post('/register/worker', async (req: Request, res: Response) => {
         .single();
 
       if (existingProfile) {
-        // Already fully registered, just log them in
+        // Already registered — update profile with any new data and log them in
+        const updateData: any = {};
+        if (full_name) updateData.full_name = full_name;
+        if (city) updateData.city = city;
+        if (state) updateData.state = state;
+        if (address) updateData.address = address;
+        if (skills && skills.length > 0) updateData.skills = skills;
+        if (experience_years !== undefined) updateData.experience_years = experience_years;
+        if (contact_phone) updateData.contact_phone = contact_phone;
+        if (minimum_salary) updateData.minimum_salary = minimum_salary;
+        if (joining_days) updateData.joining_days = joining_days;
+        if (preferred_job_types) updateData.preferred_job_types = preferred_job_types;
+        if (preferred_locations) updateData.preferred_locations = preferred_locations;
+
+        if (Object.keys(updateData).length > 0) {
+          await supabase.from('worker_profiles').update(updateData).eq('user_id', existingUser.id);
+          console.log('✅ Updated existing worker profile with new data');
+        }
+
         const tokens = JWTUtil.generateTokens(existingUser.id, 'worker');
         console.log('✅ Worker already registered, logging in');
         return ApiResponseUtil.success(res, { user: existingUser, tokens });

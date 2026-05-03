@@ -1100,7 +1100,7 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
       const enriched = apps.map(app => {
         const wp = workers?.find(w => w.user_id === app.worker_id);
         const u = users?.find(u => u.id === app.worker_id);
-        const name = wp?.full_name && wp.full_name.trim() !== '' ? wp.full_name : `Worker (${u?.phone || 'Unknown'})`;
+        const name = wp?.full_name && wp.full_name.trim() !== '' ? wp.full_name : 'Candidate';
         return {
           ...app,
           worker_profiles: {
@@ -1878,7 +1878,7 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
         return {
           ...app,
           worker: {
-            full_name: workerProfile?.full_name || 'N/A',
+            full_name: (workerProfile?.full_name && workerProfile.full_name.trim() !== '') ? workerProfile.full_name : `Worker`,
             city: workerProfile?.city || '',
             skills: workerProfile?.skills || [],
             contact_phone: workerProfile?.contact_phone || userRecord?.phone || '',

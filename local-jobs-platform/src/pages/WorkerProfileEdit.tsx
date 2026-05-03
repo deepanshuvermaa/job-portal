@@ -22,15 +22,16 @@ export const WorkerProfileEdit: React.FC = () => {
 
   const [formData, setFormData] = useState({
     full_name: '',
+    contact_phone: '',
     city: '',
     state: '',
     pincode: '',
     address: '',
     bio: '',
     experience_years: 0,
+    minimum_salary: '',
+    joining_days: '',
     skills: [] as string[],
-    alternate_phones: [] as string[],
-    new_phone: ''
   });
 
   useEffect(() => {
@@ -40,15 +41,16 @@ export const WorkerProfileEdit: React.FC = () => {
         setProfile(data);
         setFormData({
           full_name: data.full_name || '',
+          contact_phone: data.contact_phone || '',
           city: data.city || '',
           state: data.state || '',
           pincode: data.pincode || '',
           address: data.address || '',
           bio: data.bio || '',
           experience_years: data.experience_years || 0,
+          minimum_salary: data.minimum_salary ? String(data.minimum_salary) : '',
+          joining_days: data.joining_days || '',
           skills: data.skills || [],
-          alternate_phones: data.alternate_phones || [],
-          new_phone: ''
         });
       } catch (err: any) {
         setError('Failed to load profile');
@@ -66,23 +68,6 @@ export const WorkerProfileEdit: React.FC = () => {
       skills: prev.skills.includes(skill)
         ? prev.skills.filter(s => s !== skill)
         : [...prev.skills, skill]
-    }));
-  };
-
-  const handleAddPhone = () => {
-    if (formData.new_phone && !formData.alternate_phones.includes(formData.new_phone)) {
-      setFormData(prev => ({
-        ...prev,
-        alternate_phones: [...prev.alternate_phones, prev.new_phone],
-        new_phone: ''
-      }));
-    }
-  };
-
-  const handleRemovePhone = (phone: string) => {
-    setFormData(prev => ({
-      ...prev,
-      alternate_phones: prev.alternate_phones.filter(p => p !== phone)
     }));
   };
 
@@ -105,12 +90,15 @@ export const WorkerProfileEdit: React.FC = () => {
     try {
       await updateWorkerProfile({
         full_name: formData.full_name,
+        contact_phone: formData.contact_phone,
         city: formData.city,
         state: formData.state,
         pincode: formData.pincode,
         address: formData.address,
         bio: formData.bio,
         experience_years: Number(formData.experience_years),
+        minimum_salary: formData.minimum_salary ? Number(formData.minimum_salary) : null,
+        joining_days: formData.joining_days,
         skills: formData.skills,
       });
 
@@ -169,45 +157,86 @@ export const WorkerProfileEdit: React.FC = () => {
             />
 
             <Input
-              label="Full Name"
+              label={language === 'hi' ? 'पूरा नाम' : 'Full Name'}
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               required
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label={language === 'hi' ? 'संपर्क नंबर' : 'Contact Phone'}
+              value={formData.contact_phone}
+              onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              type="tel"
+              inputMode="numeric"
+              placeholder="9876543210"
+              required
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="City"
+                label={language === 'hi' ? 'शहर' : 'City'}
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 required
               />
               <Input
-                label="State"
+                label={language === 'hi' ? 'राज्य' : 'State'}
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Pincode"
+                label={language === 'hi' ? 'पिनकोड' : 'Pincode'}
                 value={formData.pincode}
-                onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                inputMode="numeric"
               />
               <Input
-                label="Experience (years)"
+                label={language === 'hi' ? 'अनुभव (वर्ष)' : 'Experience (years)'}
                 type="number"
                 value={formData.experience_years}
                 onChange={(e) => setFormData({ ...formData, experience_years: Number(e.target.value) })}
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label={language === 'hi' ? 'न्यूनतम वेतन (₹/महीना)' : 'Minimum Salary (₹/month)'}
+                value={formData.minimum_salary}
+                onChange={(e) => setFormData({ ...formData, minimum_salary: e.target.value })}
+                type="number"
+                inputMode="numeric"
+                placeholder="10000"
+              />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  {language === 'hi' ? 'कितने दिन में जॉइन कर सकते हैं' : 'Can join within'}
+                </label>
+                <select
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base bg-white"
+                  value={formData.joining_days}
+                  onChange={(e) => setFormData({ ...formData, joining_days: e.target.value })}
+                >
+                  <option value="">{language === 'hi' ? 'चुनें' : 'Select'}</option>
+                  <option value="immediate">{language === 'hi' ? 'तुरंत' : 'Immediately'}</option>
+                  <option value="3">{language === 'hi' ? '3 दिन में' : 'Within 3 days'}</option>
+                  <option value="7">{language === 'hi' ? '1 हफ्ते में' : 'Within 1 week'}</option>
+                  <option value="15">{language === 'hi' ? '15 दिन में' : 'Within 15 days'}</option>
+                  <option value="30">{language === 'hi' ? '1 महीने में' : 'Within 1 month'}</option>
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                {language === 'hi' ? 'पता' : 'Address'}
+              </label>
               <textarea
-                className="input-field min-h-[80px]"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-base min-h-[80px]"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
@@ -243,50 +272,9 @@ export const WorkerProfileEdit: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Alternate Phone Numbers</label>
-              <div className="space-y-2">
-                {formData.alternate_phones.map((phone, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Input value={phone} readOnly />
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleRemovePhone(phone)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Add alternate number"
-                    value={formData.new_phone}
-                    onChange={(e) => setFormData({ ...formData, new_phone: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddPhone}
-                  >
-                    Add
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button type="submit" variant="primary" loading={submitting}>
-                Save Changes
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/worker/dashboard')}
-              >
-                Cancel
+            <div className="pt-4">
+              <Button type="submit" variant="primary" size="lg" fullWidth loading={submitting}>
+                {language === 'hi' ? 'सेव करें' : 'Save Changes'}
               </Button>
             </div>
           </form>
