@@ -1077,11 +1077,12 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
   try {
     const { jobId } = req.params;
 
-    // Get applications
+    // Get applications - only show admin-approved, shortlisted, or hired
     const { data: apps, error } = await supabase
       .from('applications')
       .select('*')
       .eq('job_id', jobId)
+      .in('status', ['admin_approved', 'shortlisted', 'hired'])
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -1089,14 +1090,13 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
     // Get worker profiles for these applications
     if (apps && apps.length > 0) {
       const workerIds = [...new Set(apps.map(a => a.worker_id))];
-      const [{ data: workers }, { data: users }] = await Promise.all([
-        supabase.from('worker_profiles').select('user_id, full_name, city, skills, experience_years, profile_photo_url, contact_phone').in('user_id', workerIds),
-        supabase.from('users').select('id, phone').in('id', workerIds),
-      ]);
+      const { data: workers } = await supabase
+        .from('worker_profiles')
+        .select('user_id, full_name, city, skills, experience_years, profile_photo_url')
+        .in('user_id', workerIds);
 
       const enriched = apps.map(app => {
         const wp = workers?.find(w => w.user_id === app.worker_id);
-        const u = users?.find(u => u.id === app.worker_id);
         return {
           ...app,
           worker_profiles: {
@@ -1105,8 +1105,6 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
             skills: wp?.skills || [],
             experience_years: wp?.experience_years || 0,
             profile_photo_url: wp?.profile_photo_url || null,
-            contact_phone: wp?.contact_phone || u?.phone || '',
-            phone: u?.phone || '',
           },
         };
       });
@@ -1884,6 +1882,32 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
     }
 
     return ApiResponseUtil.paginated(res, [], +page, +limit, 0);
+  } catch (error: any) {
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
+// Admin: Approve/Reject Application (gate before employer sees it)
+app.put('/api/admin/applications/:applicationId', authenticate, authorize('admin'), async (req: Request, res: Response) => {
+  try {
+    const { applicationId } = req.params;
+    const { status } = req.body; // 'admin_approved' or 'rejected'
+
+    const { data, error } = await supabase
+      .from('applications')
+      .update({
+        status,
+        status_updated_at: new Date().toISOString()
+      })
+      .eq('id', applicationId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    console.log(`✅ Admin updated application ${applicationId} to ${status}`);
+
+    return ApiResponseUtil.success(res, data);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }

@@ -81,6 +81,54 @@ export const REPORT_REASONS = [
   { value: 'other', label: 'Other', labelHi: 'अन्य' },
 ];
 
+export const DEPARTMENTS = [
+  { value: 'sales', label: 'Sales & Business Development', labelHi: 'सेल्स और बिजनेस डेवलपमेंट' },
+  { value: 'delivery', label: 'Delivery & Logistics', labelHi: 'डिलीवरी और लॉजिस्टिक्स' },
+  { value: 'production', label: 'Production & Manufacturing', labelHi: 'प्रोडक्शन और मैन्युफैक्चरिंग' },
+  { value: 'maintenance', label: 'Maintenance & Repair', labelHi: 'रखरखाव और मरम्मत' },
+  { value: 'hospitality', label: 'Hospitality & Food Service', labelHi: 'हॉस्पिटैलिटी और फूड सर्विस' },
+  { value: 'retail', label: 'Retail / Counter Sales / B2C', labelHi: 'रिटेल / काउंटर सेल्स' },
+  { value: 'security', label: 'Security & Facility', labelHi: 'सुरक्षा और फैसिलिटी' },
+  { value: 'healthcare', label: 'Healthcare & Medical', labelHi: 'हेल्थकेयर और मेडिकल' },
+  { value: 'construction', label: 'Construction & Civil', labelHi: 'कंस्ट्रक्शन और सिविल' },
+  { value: 'transport', label: 'Transport & Driving', labelHi: 'ट्रांसपोर्ट और ड्राइविंग' },
+  { value: 'cleaning', label: 'Cleaning & Housekeeping', labelHi: 'सफाई और हाउसकीपिंग' },
+  { value: 'admin', label: 'Admin & Back Office', labelHi: 'एडमिन और बैक ऑफिस' },
+  { value: 'telecalling', label: 'Telecalling & BPO', labelHi: 'टेलीकॉलिंग और BPO' },
+  { value: 'other', label: 'Other', labelHi: 'अन्य' },
+];
+
+export const PERKS_BENEFITS = [
+  { value: 'paid_leaves', label: 'Paid Leaves', labelHi: 'सवेतन छुट्टी', icon: '🌴' },
+  { value: 'flexible_hours', label: 'Flexible Work Hours', labelHi: 'फ्लेक्सिबल टाइम', icon: '⏰' },
+  { value: 'sales_incentives', label: 'Sales Incentives', labelHi: 'सेल्स इन्सेंटिव', icon: '🎯' },
+  { value: 'joining_bonus', label: 'Joining Bonus', labelHi: 'ज्वाइनिंग बोनस', icon: '💰' },
+  { value: 'travel_allowance', label: 'Travel Allowance', labelHi: 'यात्रा भत्ता', icon: '✈️' },
+  { value: 'shift_allowance', label: 'Shift Allowance', labelHi: 'शिफ्ट भत्ता', icon: '🌙' },
+  { value: 'weekly_payout', label: 'Weekly Payout', labelHi: 'साप्ताहिक भुगतान', icon: '💵' },
+  { value: 'petrol_allowance', label: 'Petrol Allowance', labelHi: 'पेट्रोल भत्ता', icon: '⛽' },
+  { value: 'mobile_allowance', label: 'Mobile Allowance', labelHi: 'मोबाइल भत्ता', icon: '📱' },
+  { value: 'food_provided', label: 'Food Provided', labelHi: 'खाना मिलेगा', icon: '🍛' },
+  { value: 'accommodation', label: 'Accommodation', labelHi: 'रहने की व्यवस्था', icon: '🏠' },
+  { value: 'pf_esi', label: 'PF / ESI', labelHi: 'PF / ESI', icon: '🏦' },
+  { value: 'medical_insurance', label: 'Medical Insurance', labelHi: 'मेडिकल बीमा', icon: '🏥' },
+  { value: 'overtime_pay', label: 'Overtime Pay', labelHi: 'ओवरटाइम पे', icon: '💪' },
+];
+
+export const QUALIFICATION_OPTIONS = [
+  { value: 'below_10th', label: '< 10th Pass', labelHi: '10वीं से कम' },
+  { value: '10th_pass', label: '10th Pass', labelHi: '10वीं पास' },
+  { value: '12th_pass', label: '12th Pass', labelHi: '12वीं पास' },
+  { value: 'graduate', label: 'Graduate', labelHi: 'ग्रेजुएट' },
+  { value: 'any', label: 'Any / No Requirement', labelHi: 'कोई भी' },
+];
+
+export const GENDER_OPTIONS = [
+  { value: 'any', label: 'Any', labelHi: 'कोई भी' },
+  { value: 'male', label: 'Male Only', labelHi: 'केवल पुरुष' },
+  { value: 'female', label: 'Female Only', labelHi: 'केवल महिला' },
+];
+
 export const MAX_APPLICATIONS_PER_DAY = 10;
 export const JOB_EXPIRY_DAYS = 30;
 export const DEFAULT_MAX_DISTANCE_KM = 10;
