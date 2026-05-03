@@ -358,8 +358,40 @@ export const AdminDashboard: React.FC = () => {
                 </Card>
               )}
 
+              {/* 🔷 Shortlisted — Sent to Employer, awaiting their decision */}
+              {applications.filter(a => a.status === 'shortlisted').length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-blue-700 mb-3">🔷 Approved & Sent to Employer ({applications.filter(a => a.status === 'shortlisted').length})</h2>
+                  {applications.filter(a => a.status === 'shortlisted').map((app: any) => (
+                    <div key={app.id} className="border border-blue-200 bg-blue-50 rounded-lg p-3 mb-2">
+                      <span className="font-semibold">{app.worker?.full_name}</span>
+                      <span className="text-gray-400 mx-1">→</span>
+                      <span className="text-blue-600">{app.job?.title}</span>
+                      <span className="text-gray-400 mx-1">at</span>
+                      <span className="text-gray-600">{app.employer?.business_name}</span>
+                      <span className="text-xs text-blue-500 ml-2">Waiting for employer to respond</span>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
+              {/* 🔴 Rejected */}
+              {applications.filter(a => a.status === 'rejected').length > 0 && (
+                <Card>
+                  <h2 className="text-lg font-bold text-red-700 mb-3">🔴 Rejected ({applications.filter(a => a.status === 'rejected').length})</h2>
+                  {applications.filter(a => a.status === 'rejected').map((app: any) => (
+                    <div key={app.id} className="border border-red-200 bg-red-50 rounded-lg p-3 mb-2">
+                      <span className="font-semibold">{app.worker?.full_name}</span>
+                      <span className="text-gray-400 mx-1">→</span>
+                      <span className="text-red-600 line-through">{app.job?.title}</span>
+                      <span className="text-xs text-red-500 ml-2">Rejected</span>
+                    </div>
+                  ))}
+                </Card>
+              )}
+
               {/* All clear */}
-              {jobs.length === 0 && applications.filter(a => a.status === 'pending').length === 0 && applications.filter(a => a.status === 'hired').length === 0 && allWorkers.filter(w => w.verification_status === 'pending').length === 0 && allEmployers.filter(e => e.verification_status === 'pending').length === 0 && (
+              {jobs.length === 0 && applications.length === 0 && allWorkers.filter(w => w.verification_status === 'pending').length === 0 && allEmployers.filter(e => e.verification_status === 'pending').length === 0 && (
                 <Card><div className="text-center py-8"><p className="text-2xl mb-2">✅</p><p className="text-lg font-medium text-gray-700">All caught up!</p></div></Card>
               )}
             </div>

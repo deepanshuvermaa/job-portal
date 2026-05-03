@@ -1865,16 +1865,19 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
         supabase.from('users').select('id, phone').in('id', workerIds),
       ]);
 
-      // Get employer names for jobs
+      // Get employer names + phone for jobs
       const employerIds = [...new Set((jobs || []).map(j => j.employer_id))];
-      const { data: employers } = await supabase
-        .from('employer_profiles')
-        .select('user_id, business_name')
-        .in('user_id', employerIds);
+      const [{ data: employers }, { data: employerUsers }] = await Promise.all([
+        supabase.from('employer_profiles').select('user_id, business_name, contact_phone, city').in('user_id', employerIds),
+        supabase.from('users').select('id, phone').in('id', employerIds),
+      ]);
 
       const enriched = apps.map(app => {
         const workerProfile = workers?.find(w => w.user_id === app.worker_id);
         const userRecord = users?.find(u => u.id === app.worker_id);
+        const jobRecord = jobs?.find(j => j.id === app.job_id);
+        const empProfile = employers?.find(e => e.user_id === jobRecord?.employer_id);
+        const empUser = employerUsers?.find(u => u.id === jobRecord?.employer_id);
         return {
           ...app,
           worker: {
@@ -1884,8 +1887,13 @@ app.get('/api/admin/applications', authenticate, authorize('admin'), async (req:
             contact_phone: workerProfile?.contact_phone || userRecord?.phone || '',
             phone: userRecord?.phone || '',
           },
-          job: jobs?.find(j => j.id === app.job_id) || null,
-          employer: employers?.find(e => e.user_id === jobs?.find(j => j.id === app.job_id)?.employer_id) || null,
+          job: jobRecord || null,
+          employer: {
+            business_name: empProfile?.business_name || 'Unknown',
+            contact_phone: empProfile?.contact_phone || '',
+            phone: empUser?.phone || '',
+            city: empProfile?.city || '',
+          },
         };
       });
 
