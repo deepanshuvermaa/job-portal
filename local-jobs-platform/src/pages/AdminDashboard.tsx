@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
-import { getAdminDashboard, getPendingJobs, getPendingVerifications, approveJob, rejectJob, verifyWorker, verifyEmployer } from '../services/admin';
+import { getAdminDashboard, getPendingJobs, getAllJobs, getAllApplications, getPendingVerifications, approveJob, rejectJob, verifyWorker, verifyEmployer } from '../services/admin';
 import { useAuthStore } from '../store/authStore';
 
 type TabType = 'pending' | 'approved' | 'rejected' | 'all';
-type MainTabType = 'overview' | 'workers' | 'employers' | 'jobs' | 'connections';
+type MainTabType = 'overview' | 'workers' | 'employers' | 'jobs' | 'applications' | 'connections';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -15,6 +15,9 @@ export const AdminDashboard: React.FC = () => {
   const [allWorkers, setAllWorkers] = useState<any[]>([]);
   const [allEmployers, setAllEmployers] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
+  const [allJobs, setAllJobs] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]);
+  const [jobStatusFilter, setJobStatusFilter] = useState<string>('');
   const [error, setError] = useState('');
   const [mainTab, setMainTab] = useState<MainTabType>('overview');
   const [workerTab, setWorkerTab] = useState<TabType>('pending');
@@ -23,15 +26,19 @@ export const AdminDashboard: React.FC = () => {
   const loadData = async () => {
     setError('');
     try {
-      const [statsData, allData, jobsData] = await Promise.all([
+      const [statsData, allData, jobsData, allJobsData, appsData] = await Promise.all([
         getAdminDashboard(),
         getPendingVerifications(),
         getPendingJobs(),
+        getAllJobs(undefined, undefined, 1, 100),
+        getAllApplications(undefined, 1, 100),
       ]);
       setStats(statsData);
       setAllWorkers(allData?.workers || []);
       setAllEmployers(allData?.employers || []);
       setJobs(jobsData || []);
+      setAllJobs(allJobsData || []);
+      setApplications(appsData || []);
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Failed to load admin dashboard');
     }
@@ -158,6 +165,21 @@ export const AdminDashboard: React.FC = () => {
               {jobs.length > 0 && (
                 <span className="ml-2 px-2 py-0.5 bg-yellow-500 text-white text-xs rounded-full">
                   {jobs.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setMainTab('applications')}
+              className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                mainTab === 'applications'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📋 Applications
+              {applications.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
+                  {applications.length}
                 </span>
               )}
             </button>
@@ -675,60 +697,127 @@ export const AdminDashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Jobs Tab */}
+          {/* Jobs Tab — ALL jobs with status filters */}
           {mainTab === 'jobs' && (
             <Card>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Approvals</h2>
-              {jobs.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">No pending jobs</p>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">All Jobs</h2>
+                <div className="flex gap-2">
+                  {[
+                    { value: '', label: 'All' },
+                    { value: 'draft', label: 'Pending' },
+                    { value: 'open', label: 'Approved' },
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'closed', label: 'Closed' },
+                  ].map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => setJobStatusFilter(f.value)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        jobStatusFilter === f.value
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job Title</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Job Type</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employment</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Salary</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Posted</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {jobs.map((job) => (
-                        <tr key={job.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4">
-                            <div className="font-medium text-gray-900">{job.title}</div>
-                            <div className="text-xs text-gray-500 max-w-xs truncate">{job.description}</div>
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-700">{job.city}</td>
-                          <td className="px-4 py-4 text-sm text-gray-700">{job.job_type}</td>
-                          <td className="px-4 py-4 text-sm text-gray-700">{job.employment_type}</td>
-                          <td className="px-4 py-4 text-sm text-gray-700">
-                            {job.salary_min && job.salary_max
-                              ? `₹${job.salary_min}-${job.salary_max}`
-                              : 'Not specified'}
-                          </td>
-                          <td className="px-4 py-4 text-sm text-gray-500">
-                            {new Date(job.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-4">
+              </div>
+
+              {(() => {
+                const filtered = jobStatusFilter
+                  ? allJobs.filter(j => j.status === jobStatusFilter)
+                  : allJobs;
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <p className="text-gray-500 text-lg">No jobs found</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {filtered.map((job) => (
+                      <div key={job.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-gray-900">{job.title}</span>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                job.status === 'open' ? 'bg-green-100 text-green-700' :
+                                job.status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
+                                job.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {job.status === 'open' ? 'Approved' : job.status === 'draft' ? 'Pending' : job.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600">{job.city} · {job.employment_type} · {job.salary_min ? `₹${job.salary_min}-${job.salary_max}` : 'Salary N/A'}</p>
+                            {job.employer && <p className="text-xs text-gray-500 mt-1">By: {job.employer.business_name}</p>}
+                            <p className="text-xs text-gray-400 mt-1">Posted: {new Date(job.created_at).toLocaleDateString()}</p>
+                          </div>
+                          {job.status === 'draft' && (
                             <div className="flex gap-2">
-                              <Button variant="primary" onClick={() => handleJobAction(job.id, 'approve')}>
+                              <Button variant="primary" size="sm" onClick={() => handleJobAction(job.id, 'approve')}>
                                 Approve
                               </Button>
-                              <Button variant="danger" onClick={() => handleJobAction(job.id, 'reject')}>
+                              <Button variant="danger" size="sm" onClick={() => handleJobAction(job.id, 'reject')}>
                                 Reject
                               </Button>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </Card>
+          )}
+
+          {/* Applications Tab */}
+          {mainTab === 'applications' && (
+            <Card>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">All Applications</h2>
+              {applications.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">No applications yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {applications.map((app: any) => (
+                    <div key={app.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-gray-900">{app.worker?.full_name || 'Unknown Worker'}</span>
+                            <span className="text-gray-400">→</span>
+                            <span className="font-medium text-blue-600">{app.job?.title || 'Unknown Job'}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-1">
+                            {app.worker?.city && <span>📍 {app.worker.city}</span>}
+                            {app.worker?.contact_phone && <span>📞 {app.worker.contact_phone}</span>}
+                            {app.employer?.business_name && <span>🏢 {app.employer.business_name}</span>}
+                          </div>
+                          {app.cover_letter && <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">"{app.cover_letter}"</p>}
+                          {app.expected_salary && <p className="text-sm text-gray-500 mt-1">Expected: ₹{app.expected_salary}</p>}
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                              app.status === 'shortlisted' ? 'bg-green-100 text-green-700' :
+                              app.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {app.status || 'pending'}
+                            </span>
+                            <span className="text-xs text-gray-400">Applied: {new Date(app.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </Card>

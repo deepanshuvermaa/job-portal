@@ -79,9 +79,9 @@ export const JobDetails: React.FC = () => {
         cover_letter: coverLetter || null,
         expected_salary: expectedSalary ? Number(expectedSalary) : null,
       });
-      setSuccess('Application submitted successfully.');
-      toast.success('🎉 Application submitted successfully!');
-      toast('📞 Admin will review and connect you with the employer', {
+      setSuccess('आवेदन भेजा गया। एडमिन जांच के बाद नियोक्ता को भेजेगा।');
+      toast.success('आवेदन भेजा गया!');
+      toast('एडमिन आपका आवेदन जांचेगा और नियोक्ता से जोड़ेगा', {
         icon: '⏳',
         duration: 5000,
       });

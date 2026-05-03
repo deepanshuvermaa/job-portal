@@ -70,6 +70,11 @@ export const getAllJobs = async (city?: string, status?: string, page: number = 
   return data.data;
 };
 
+export const getAllApplications = async (status?: string, page: number = 1, limit: number = 50) => {
+  const { data } = await api.get('/api/admin/applications', { params: { status, page, limit } });
+  return data.data;
+};
+
 export const banUser = async (userId: string) => {
   const { data } = await api.put(`/api/admin/users/${userId}/ban`);
   return data.data;
