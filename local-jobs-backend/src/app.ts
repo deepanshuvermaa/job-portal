@@ -767,7 +767,6 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
           application_id: applicationData.id,
           worker_id: req.user!.userId,
           employer_id: jobData.employer_id,
-          job_id: jobId,
           status: 'pending'
         });
 
@@ -805,17 +804,43 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
 // Get Worker Applications
 app.get('/api/workers/applications', authenticate, authorize('worker'), async (req: Request, res: Response) => {
   try {
-    const { data } = await supabase
+    // Get applications for this worker
+    const { data: apps, error } = await supabase
       .from('applications')
-      .select(`
-        *,
-        jobs(*),
-        employer:jobs(employer:employer_profiles!employer_profiles_user_id_fkey(business_name))
-      `)
+      .select('*')
       .eq('worker_id', req.user!.userId)
-      .order('applied_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
-    return ApiResponseUtil.success(res, data);
+    if (error) throw error;
+
+    if (apps && apps.length > 0) {
+      // Get job details
+      const jobIds = [...new Set(apps.map(a => a.job_id))];
+      const { data: jobs } = await supabase
+        .from('jobs')
+        .select('id, title, city, employment_type, salary_min, salary_max, employer_id, status')
+        .in('id', jobIds);
+
+      // Get employer names
+      const employerIds = [...new Set((jobs || []).map(j => j.employer_id))];
+      const { data: employers } = await supabase
+        .from('employer_profiles')
+        .select('user_id, business_name')
+        .in('user_id', employerIds);
+
+      const enriched = apps.map(app => {
+        const job = jobs?.find(j => j.id === app.job_id);
+        const employer = employers?.find(e => e.user_id === job?.employer_id);
+        return {
+          ...app,
+          jobs: job ? { ...job, employer_name: employer?.business_name || '' } : null,
+        };
+      });
+
+      return ApiResponseUtil.success(res, enriched);
+    }
+
+    return ApiResponseUtil.success(res, []);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }
@@ -1052,13 +1077,44 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
   try {
     const { jobId } = req.params;
 
-    const { data } = await supabase
+    // Get applications
+    const { data: apps, error } = await supabase
       .from('applications')
-      .select('*, worker_profiles!inner(*)')
+      .select('*')
       .eq('job_id', jobId)
-      .order('applied_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
-    return ApiResponseUtil.success(res, data);
+    if (error) throw error;
+
+    // Get worker profiles for these applications
+    if (apps && apps.length > 0) {
+      const workerIds = [...new Set(apps.map(a => a.worker_id))];
+      const [{ data: workers }, { data: users }] = await Promise.all([
+        supabase.from('worker_profiles').select('user_id, full_name, city, skills, experience_years, profile_photo_url, contact_phone').in('user_id', workerIds),
+        supabase.from('users').select('id, phone').in('id', workerIds),
+      ]);
+
+      const enriched = apps.map(app => {
+        const wp = workers?.find(w => w.user_id === app.worker_id);
+        const u = users?.find(u => u.id === app.worker_id);
+        return {
+          ...app,
+          worker_profiles: {
+            full_name: wp?.full_name || 'N/A',
+            city: wp?.city || '',
+            skills: wp?.skills || [],
+            experience_years: wp?.experience_years || 0,
+            profile_photo_url: wp?.profile_photo_url || null,
+            contact_phone: wp?.contact_phone || u?.phone || '',
+            phone: u?.phone || '',
+          },
+        };
+      });
+
+      return ApiResponseUtil.success(res, enriched);
+    }
+
+    return ApiResponseUtil.success(res, []);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }

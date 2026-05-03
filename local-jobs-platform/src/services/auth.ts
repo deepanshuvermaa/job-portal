@@ -73,6 +73,6 @@ export const loadCurrentUser = async () => {
   if (MOCK_MODE) {
     return mockLoadCurrentUser();
   }
-  const response = await cachedGet('/api/auth/me', 2 * 60 * 60 * 1000); // cache 2 hours
-  return response.data.data;
+  const { data } = await api.get('/api/auth/me');
+  return data.data;
 };

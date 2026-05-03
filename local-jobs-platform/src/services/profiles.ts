@@ -1,4 +1,4 @@
-import { api, MOCK_MODE, cachedGet } from './api';
+import { api, MOCK_MODE } from './api';
 import {
   mockGetWorkerProfile,
   mockUpdateWorkerProfile,
@@ -10,8 +10,8 @@ export const getWorkerProfile = async () => {
   if (MOCK_MODE) {
     return mockGetWorkerProfile();
   }
-  const response = await cachedGet('/api/workers/profile');
-  return response.data.data;
+  const { data } = await api.get('/api/workers/profile');
+  return data.data;
 };
 
 export const updateWorkerProfile = async (payload: Record<string, any>) => {
@@ -26,8 +26,8 @@ export const getEmployerProfile = async () => {
   if (MOCK_MODE) {
     return mockGetEmployerProfile();
   }
-  const response = await cachedGet('/api/employers/profile');
-  return response.data.data;
+  const { data } = await api.get('/api/employers/profile');
+  return data.data;
 };
 
 export const updateEmployerProfile = async (payload: Record<string, any>) => {
