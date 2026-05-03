@@ -62,6 +62,7 @@ export const LandingPage: React.FC = () => {
           loop
           muted
           playsInline
+          poster={`${import.meta.env.BASE_URL}bgposter.jpg`}
           onCanPlay={() => setVideoLoaded(true)}
           className={`absolute inset-0 w-full h-full object-cover z-[1] transition-opacity duration-1000 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
           src={`${import.meta.env.BASE_URL}bgvideo.mp4`}
