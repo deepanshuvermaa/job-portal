@@ -125,12 +125,18 @@ const refreshAccessToken = async (): Promise<string | null> => {
   }
 };
 
-// Request interceptor - Add auth token to requests
+// Request interceptor - Add auth token + invalidate cache on mutations
 api.interceptors.request.use((config) => {
   const token = getStoredToken();
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Invalidate cache on any mutation (POST/PUT/DELETE)
+  if (config.method && ['post', 'put', 'delete', 'patch'].includes(config.method)) {
+    apiCache.clear();
+  }
+
   return config;
 });
 
@@ -171,3 +177,30 @@ api.interceptors.response.use(
 );
 
 export const API_BASE = API_BASE_URL;
+
+// Simple in-memory cache for GET requests to reduce redundant API calls
+const apiCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 2 * 60 * 60 * 1000; // 2 hours default
+
+export const cachedGet = async (url: string, ttl = CACHE_TTL) => {
+  const cached = apiCache.get(url);
+  if (cached && Date.now() - cached.timestamp < ttl) {
+    return cached.data;
+  }
+
+  const response = await api.get(url);
+  apiCache.set(url, { data: response, timestamp: Date.now() });
+  return response;
+};
+
+export const invalidateCache = (urlPattern?: string) => {
+  if (!urlPattern) {
+    apiCache.clear();
+    return;
+  }
+  for (const key of apiCache.keys()) {
+    if (key.includes(urlPattern)) {
+      apiCache.delete(key);
+    }
+  }
+};

@@ -1,4 +1,4 @@
-import { api, MOCK_MODE } from './api';
+import { api, MOCK_MODE, cachedGet, invalidateCache } from './api';
 import {
   mockSendOtp,
   mockVerifyOtp,
@@ -73,6 +73,6 @@ export const loadCurrentUser = async () => {
   if (MOCK_MODE) {
     return mockLoadCurrentUser();
   }
-  const { data } = await api.get('/api/auth/me');
-  return data.data;
+  const response = await cachedGet('/api/auth/me', 2 * 60 * 60 * 1000); // cache 2 hours
+  return response.data.data;
 };

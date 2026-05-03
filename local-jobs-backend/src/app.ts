@@ -961,10 +961,20 @@ app.put('/api/employers/profile', authenticate, authorize('employer'), async (re
 // Create Job
 app.post('/api/employers/jobs', authenticate, authorize('employer'), async (req: Request, res: Response) => {
   try {
+    // Check if employer is verified — auto-approve their jobs
+    const { data: employerProfile } = await supabase
+      .from('employer_profiles')
+      .select('verification_status')
+      .eq('user_id', req.user!.userId)
+      .single();
+
+    const isVerified = employerProfile?.verification_status === 'verified';
+
     const jobData = {
       ...req.body,
       employer_id: req.user!.userId,
-      status: 'draft'
+      status: isVerified ? 'open' : 'draft',
+      ...(isVerified ? { approved_at: new Date().toISOString() } : {}),
     };
 
     const { data, error } = await supabase
@@ -975,7 +985,50 @@ app.post('/api/employers/jobs', authenticate, authorize('employer'), async (req:
 
     if (error) throw error;
 
+    console.log(`✅ Job created: ${data.id}, status: ${data.status} (employer verified: ${isVerified})`);
+
     return ApiResponseUtil.created(res, data);
+  } catch (error: any) {
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
+// Browse Workers (for employers)
+app.get('/api/employers/workers/browse', authenticate, authorize('employer'), async (req: Request, res: Response) => {
+  try {
+    const { search, city, skill, experience, limit = 50 } = req.query;
+
+    let query = supabase
+      .from('worker_profiles')
+      .select('*')
+      .eq('verification_status', 'verified');
+
+    if (city) {
+      query = query.ilike('city', `%${city}%`);
+    }
+
+    if (skill) {
+      query = query.contains('skills', [skill]);
+    }
+
+    if (experience) {
+      const exp = parseInt(experience as string);
+      if (!isNaN(exp)) {
+        query = query.gte('experience_years', exp);
+      }
+    }
+
+    if (search) {
+      query = query.or(`full_name.ilike.%${search}%,city.ilike.%${search}%,bio.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(+limit);
+
+    if (error) throw error;
+
+    return ApiResponseUtil.success(res, data || []);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }
@@ -1426,16 +1479,30 @@ app.get('/api/admin/dashboard', authenticate, authorize('admin'), async (req: Re
 // Pending Job Approvals
 app.get('/api/admin/jobs/pending', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {
-    const { data } = await supabase
+    // Get draft jobs
+    const { data: jobs } = await supabase
       .from('jobs')
-      .select(`
-        *,
-        employer:employer_profiles!employer_profiles_user_id_fkey(business_name)
-      `)
+      .select('*')
       .eq('status', 'draft')
       .order('created_at', { ascending: false });
 
-    return ApiResponseUtil.success(res, data);
+    // Attach employer names
+    if (jobs && jobs.length > 0) {
+      const employerIds = [...new Set(jobs.map(j => j.employer_id))];
+      const { data: employers } = await supabase
+        .from('employer_profiles')
+        .select('user_id, business_name')
+        .in('user_id', employerIds);
+
+      const jobsWithEmployers = jobs.map(job => ({
+        ...job,
+        employer: employers?.find(e => e.user_id === job.employer_id) || null
+      }));
+
+      return ApiResponseUtil.success(res, jobsWithEmployers);
+    }
+
+    return ApiResponseUtil.success(res, []);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }
@@ -1672,23 +1739,37 @@ app.get('/api/admin/jobs/all', authenticate, authorize('admin'), async (req: Req
   try {
     const { city, status, page = 1, limit = 20 } = req.query;
 
+    // First get jobs
     let query = supabase
       .from('jobs')
-      .select(`
-        *,
-        employer:employer_profiles!employer_profiles_user_id_fkey(business_name, city)
-      `, { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     if (city) query = query.eq('city', city);
     if (status) query = query.eq('status', status);
 
-    const { data, error, count } = await query
+    const { data: jobs, error, count } = await query
       .order('created_at', { ascending: false })
       .range((+page - 1) * +limit, +page * +limit - 1);
 
     if (error) throw error;
 
-    return ApiResponseUtil.paginated(res, data, +page, +limit, count || 0);
+    // Then get employer profiles for these jobs
+    if (jobs && jobs.length > 0) {
+      const employerIds = [...new Set(jobs.map(j => j.employer_id))];
+      const { data: employers } = await supabase
+        .from('employer_profiles')
+        .select('user_id, business_name, city')
+        .in('user_id', employerIds);
+
+      const jobsWithEmployers = jobs.map(job => ({
+        ...job,
+        employer: employers?.find(e => e.user_id === job.employer_id) || null
+      }));
+
+      return ApiResponseUtil.paginated(res, jobsWithEmployers, +page, +limit, count || 0);
+    }
+
+    return ApiResponseUtil.paginated(res, [], +page, +limit, 0);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }
