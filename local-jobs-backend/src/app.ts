@@ -2019,6 +2019,94 @@ app.put('/api/admin/users/:userId/unban', authenticate, authorize('admin'), asyn
   }
 });
 
+// Delete User (password-protected, cascading delete from all tables)
+app.delete('/api/admin/users/:userId', authenticate, authorize('admin'), async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return ApiResponseUtil.error(res, 'Admin password required for delete', 400);
+    }
+
+    // Verify admin password
+    const bcrypt = require('bcryptjs');
+    const isValid = await bcrypt.compare(password, config.ADMIN_PASSWORD);
+    if (!isValid) {
+      return ApiResponseUtil.error(res, 'Invalid admin password', 403);
+    }
+
+    // Get user role to know which profile table to clean
+    const { data: user } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (!user) {
+      return ApiResponseUtil.error(res, 'User not found', 404);
+    }
+
+    console.log(`🗑️ Admin deleting user ${userId} (role: ${user.role})`);
+
+    // Cascading delete — order matters (child tables first)
+    // 1. Delete applications by this user
+    await supabase.from('applications').delete().eq('worker_id', userId);
+
+    // 2. Delete connections involving this user
+    await supabase.from('connections').delete().or(`worker_id.eq.${userId},employer_id.eq.${userId}`);
+
+    // 3. Delete saved jobs
+    await supabase.from('saved_jobs').delete().eq('worker_id', userId);
+
+    // 4. Delete notifications
+    await supabase.from('notifications').delete().eq('user_id', userId);
+
+    // 5. Delete reports by/against this user
+    await supabase.from('reports').delete().or(`reporter_id.eq.${userId},reported_user_id.eq.${userId}`);
+
+    // 6. Delete reviews by/for this user
+    await supabase.from('reviews').delete().or(`reviewer_id.eq.${userId},reviewed_user_id.eq.${userId}`);
+
+    // 7. Delete referrals
+    await supabase.from('referrals').delete().or(`referrer_id.eq.${userId},referred_id.eq.${userId}`);
+
+    // 8. Delete profile
+    if (user.role === 'worker') {
+      await supabase.from('worker_profiles').delete().eq('user_id', userId);
+    } else if (user.role === 'employer') {
+      // Delete employer's jobs and their applications first
+      const { data: employerJobs } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('employer_id', userId);
+
+      if (employerJobs && employerJobs.length > 0) {
+        const jobIds = employerJobs.map(j => j.id);
+        await supabase.from('applications').delete().in('job_id', jobIds);
+        await supabase.from('jobs').delete().eq('employer_id', userId);
+      }
+
+      await supabase.from('employer_profiles').delete().eq('user_id', userId);
+    }
+
+    // 9. Delete application limits
+    await supabase.from('application_limits').delete().eq('worker_id', userId);
+
+    // 10. Finally delete the user record
+    const { error } = await supabase.from('users').delete().eq('id', userId);
+
+    if (error) throw error;
+
+    console.log(`✅ User ${userId} permanently deleted`);
+
+    return ApiResponseUtil.success(res, { message: 'User permanently deleted' });
+  } catch (error: any) {
+    console.error(`❌ Delete user failed:`, error);
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
 // Hide Review
 app.put('/api/admin/reviews/:reviewId/hide', authenticate, authorize('admin'), async (req: Request, res: Response) => {
   try {

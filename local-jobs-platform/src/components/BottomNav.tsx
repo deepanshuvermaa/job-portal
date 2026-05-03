@@ -31,7 +31,6 @@ const employerTabs: NavItem[] = [
 const adminTabs: NavItem[] = [
   { path: '/admin/dashboard', icon: Home, labelEn: 'Home', labelHi: 'होम' },
   { path: '/admin/jobs', icon: Briefcase, labelEn: 'Jobs', labelHi: 'नौकरी' },
-  { path: '/admin/connections', icon: Users, labelEn: 'Connects', labelHi: 'कनेक्शन' },
   { path: '/admin/reports', icon: Settings, labelEn: 'Reports', labelHi: 'रिपोर्ट' },
   { path: '', icon: LogOut, labelEn: 'Logout', labelHi: 'लॉगआउट', action: 'logout' },
 ];

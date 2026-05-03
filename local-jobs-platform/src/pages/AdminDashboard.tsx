@@ -7,7 +7,7 @@ import { api } from '../services/api';
 import { useAuthStore } from '../store/authStore';
 
 type TabType = 'pending' | 'approved' | 'rejected' | 'all';
-type MainTabType = 'overview' | 'workers' | 'employers' | 'jobs' | 'applications' | 'connections';
+type MainTabType = 'overview' | 'workers' | 'employers' | 'jobs' | 'applications';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -18,6 +18,46 @@ export const AdminDashboard: React.FC = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [allJobs, setAllJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
+
+  // Delete confirmation state
+  const [deleteModal, setDeleteModal] = useState<{ userId: string; name: string; role: string } | null>(null);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleBanUser = async (userId: string) => {
+    try {
+      await api.put(`/api/admin/users/${userId}/ban`);
+      await loadData();
+    } catch (e: any) {
+      console.error('Ban failed:', e);
+    }
+  };
+
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      await api.put(`/api/admin/users/${userId}/unban`);
+      await loadData();
+    } catch (e: any) {
+      console.error('Unban failed:', e);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteModal || !deletePassword) return;
+    setDeleteLoading(true);
+    setDeleteError('');
+    try {
+      await api.delete(`/api/admin/users/${deleteModal.userId}`, { data: { password: deletePassword } });
+      setDeleteModal(null);
+      setDeletePassword('');
+      await loadData();
+    } catch (e: any) {
+      setDeleteError(e?.response?.data?.error || 'Delete failed. Check password.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
   const [jobStatusFilter, setJobStatusFilter] = useState<string>('');
   const [error, setError] = useState('');
   const [mainTab, setMainTab] = useState<MainTabType>('overview');
@@ -184,21 +224,7 @@ export const AdminDashboard: React.FC = () => {
                 </span>
               )}
             </button>
-            <button
-              onClick={() => setMainTab('connections')}
-              className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-                mainTab === 'connections'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              🔗 Connections
-              {stats?.totalApplications > 0 && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full">
-                  {stats.totalApplications}
-                </span>
-              )}
-            </button>
+            {/* Connections tab removed — application flow handles gating */}
           </nav>
         </div>
 
@@ -233,10 +259,10 @@ export const AdminDashboard: React.FC = () => {
                   <p className="text-3xl font-bold text-gray-900">{stats.totalJobs}</p>
                   <p className="text-xs text-yellow-600 mt-1">{jobs.length} pending approval</p>
                 </Card>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setMainTab('connections')}>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setMainTab('applications')}>
                   <p className="text-sm text-gray-500">Applications</p>
                   <p className="text-3xl font-bold text-gray-900">{stats.totalApplications}</p>
-                  <p className="text-xs text-blue-600 mt-1">Click to view connections</p>
+                  <p className="text-xs text-blue-600 mt-1">Click to review</p>
                 </Card>
               </div>
 
@@ -269,11 +295,11 @@ export const AdminDashboard: React.FC = () => {
                     <div className="text-sm text-gray-500">{jobs.length} jobs awaiting approval</div>
                   </button>
                   <button
-                    onClick={() => setMainTab('connections')}
+                    onClick={() => setMainTab('applications')}
                     className="p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
                   >
-                    <div className="font-medium">Manage Connections</div>
-                    <div className="text-sm text-gray-500">Review application requests</div>
+                    <div className="font-medium">Review Applications</div>
+                    <div className="text-sm text-gray-500">{applications.length} total applications</div>
                   </button>
                 </div>
               </Card>
@@ -375,22 +401,34 @@ export const AdminDashboard: React.FC = () => {
                           <td className="px-4 py-4 text-sm text-gray-700">{worker.experience_years || 0} yrs</td>
                           <td className="px-4 py-4">{getStatusBadge(worker.verification_status)}</td>
                           <td className="px-4 py-4">
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                               {worker.verification_status === 'pending' && (
                                 <>
-                                  <Button variant="primary" onClick={() => handleVerifyWorker(worker.user_id, 'approved')}>
+                                  <Button variant="primary" size="sm" onClick={() => handleVerifyWorker(worker.user_id, 'approved')}>
                                     Approve
                                   </Button>
-                                  <Button variant="danger" onClick={() => handleVerifyWorker(worker.user_id, 'rejected')}>
+                                  <Button variant="danger" size="sm" onClick={() => handleVerifyWorker(worker.user_id, 'rejected')}>
                                     Reject
                                   </Button>
                                 </>
                               )}
                               {worker.verification_status === 'rejected' && (
-                                <Button variant="primary" onClick={() => handleVerifyWorker(worker.user_id, 'approved')}>
+                                <Button variant="primary" size="sm" onClick={() => handleVerifyWorker(worker.user_id, 'approved')}>
                                   Re-Approve
                                 </Button>
                               )}
+                              <button
+                                onClick={() => handleBanUser(worker.user_id)}
+                                className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
+                              >
+                                Ban
+                              </button>
+                              <button
+                                onClick={() => setDeleteModal({ userId: worker.user_id, name: worker.full_name || 'Worker', role: 'worker' })}
+                                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -599,22 +637,34 @@ export const AdminDashboard: React.FC = () => {
                           <td className="px-4 py-4 text-sm text-gray-700">{employer.business_type || 'N/A'}</td>
                           <td className="px-4 py-4">{getStatusBadge(employer.verification_status)}</td>
                           <td className="px-4 py-4">
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                               {employer.verification_status === 'pending' && (
                                 <>
-                                  <Button variant="primary" onClick={() => handleVerifyEmployer(employer.user_id, 'approved')}>
+                                  <Button variant="primary" size="sm" onClick={() => handleVerifyEmployer(employer.user_id, 'approved')}>
                                     Approve
                                   </Button>
-                                  <Button variant="danger" onClick={() => handleVerifyEmployer(employer.user_id, 'rejected')}>
+                                  <Button variant="danger" size="sm" onClick={() => handleVerifyEmployer(employer.user_id, 'rejected')}>
                                     Reject
                                   </Button>
                                 </>
                               )}
                               {employer.verification_status === 'rejected' && (
-                                <Button variant="primary" onClick={() => handleVerifyEmployer(employer.user_id, 'approved')}>
+                                <Button variant="primary" size="sm" onClick={() => handleVerifyEmployer(employer.user_id, 'approved')}>
                                   Re-Approve
                                 </Button>
                               )}
+                              <button
+                                onClick={() => handleBanUser(employer.user_id)}
+                                className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
+                              >
+                                Ban
+                              </button>
+                              <button
+                                onClick={() => setDeleteModal({ userId: employer.user_id, name: employer.business_name || 'Employer', role: 'employer' })}
+                                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -857,37 +907,53 @@ export const AdminDashboard: React.FC = () => {
             </Card>
           )}
 
-          {/* Connections Tab */}
-          {mainTab === 'connections' && (
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Connection Requests</h2>
-                <button
-                  onClick={() => navigate('/admin/connections')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  View Full Connections Page
-                </button>
-              </div>
-              <div className="text-center py-12 bg-blue-50 rounded-lg border-2 border-dashed border-blue-300">
-                <div className="text-4xl mb-4">🔗</div>
-                <p className="text-lg font-medium text-gray-900 mb-2">
-                  Connection Management
-                </p>
-                <p className="text-gray-600 mb-4">
-                  Review and approve worker-employer connection requests
-                </p>
-                <button
-                  onClick={() => navigate('/admin/connections')}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  Go to Connections →
-                </button>
-              </div>
-            </Card>
-          )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-bold text-red-600 mb-2">
+              Permanently Delete User
+            </h3>
+            <p className="text-gray-700 mb-1">
+              <strong>{deleteModal.name}</strong> ({deleteModal.role})
+            </p>
+            <p className="text-sm text-gray-500 mb-4">
+              This will permanently remove all data: profile, applications, jobs, connections, reviews. This CANNOT be undone.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Enter Admin Password to confirm</label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-red-300 rounded-lg text-base focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none"
+                placeholder="Admin password"
+              />
+              {deleteError && <p className="mt-2 text-sm text-red-600">{deleteError}</p>}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setDeleteModal(null); setDeletePassword(''); setDeleteError(''); }}
+                className="flex-1 py-3 px-4 border border-gray-300 rounded-xl text-gray-700 font-semibold text-base min-h-[48px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={deleteLoading || !deletePassword}
+                className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-semibold text-base min-h-[48px] disabled:opacity-50"
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
