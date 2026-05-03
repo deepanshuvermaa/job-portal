@@ -7,8 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Almarai"', '"Noto Sans Devanagari"', 'system-ui', '-apple-system', 'sans-serif'],
-        serif: ['"Instrument Serif"', 'serif'],
+        sans: ['"Inter"', '"Noto Sans Devanagari"', 'sans-serif'],
       },
       colors: {
         cream: '#DEDBC8',

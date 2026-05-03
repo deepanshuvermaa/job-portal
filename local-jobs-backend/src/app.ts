@@ -1522,7 +1522,6 @@ app.put('/api/admin/jobs/:jobId/approve', authenticate, authorize('admin'), asyn
       .update({
         status: 'open',
         approved_at: new Date().toISOString(),
-        approved_by: req.user!.userId
       })
       .eq('id', jobId)
       .select()

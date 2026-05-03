@@ -1,64 +1,103 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Check, MapPin, Shield, Zap, Users, Briefcase, Phone, Search } from 'lucide-react';
+import { ArrowRight, MapPin, Shield, Zap, Users, Briefcase, Phone, Search, Check, Star, Clock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
-// ─── Animation Components ────────────────────────────────────────
-
-const WordsPullUp: React.FC<{ text: string; className?: string; delay?: number }> = ({ text, className = '', delay = 0 }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true });
-  const words = text.split(' ');
+// ─── FadeIn wrapper ──────────────────────────────────────────────
+const FadeIn: React.FC<{ delay?: number; duration?: number; children: React.ReactNode; className?: string }> = ({
+  delay = 0, duration = 800, children, className = ''
+}) => {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
 
   return (
-    <div ref={ref} className={`flex flex-wrap ${className}`}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          className="inline-block mr-[0.25em]"
-          initial={{ y: 20, opacity: 0 }}
-          animate={isInView ? { y: 0, opacity: 1 } : {}}
-          transition={{ delay: delay + i * 0.08, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {word}
-        </motion.span>
-      ))}
+    <div
+      className={`transition-opacity ${className}`}
+      style={{
+        opacity: visible ? 1 : 0,
+        transitionDuration: `${duration}ms`,
+      }}
+    >
+      {children}
     </div>
   );
 };
 
-const AnimatedLetter: React.FC<{ char: string; progress: any; index: number; total: number }> = ({ char, progress, index, total }) => {
-  const charProgress = index / total;
-  const opacity = useTransform(progress, [charProgress - 0.1, charProgress + 0.05], [0.15, 1]);
+// ─── Animated character-by-character heading ─────────────────────
+const AnimatedHeading: React.FC<{ text: string; className?: string }> = ({ text, className = '' }) => {
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setAnimate(true), 200);
+    return () => clearTimeout(t);
+  }, []);
+
+  const lines = text.split('\n');
+  const charDelay = 30;
 
   return (
-    <motion.span style={{ opacity }} className="inline">
-      {char}
-    </motion.span>
+    <h1 className={className}>
+      {lines.map((line, lineIdx) => {
+        const prevCharsCount = lines.slice(0, lineIdx).reduce((sum, l) => sum + l.length, 0);
+        return (
+          <span key={lineIdx} className="block">
+            {line.split('').map((char, charIdx) => {
+              const totalDelay = (prevCharsCount + charIdx) * charDelay;
+              return (
+                <span
+                  key={charIdx}
+                  className="inline-block transition-all duration-500"
+                  style={{
+                    opacity: animate ? 1 : 0,
+                    transform: animate ? 'translateX(0)' : 'translateX(-18px)',
+                    transitionDelay: `${totalDelay}ms`,
+                  }}
+                >
+                  {char === ' ' ? '\u00A0' : char}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
+    </h1>
   );
 };
 
-const ScrollRevealText: React.FC<{ text: string; className?: string }> = ({ text, className = '' }) => {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start 0.85', 'end 0.25'],
-  });
+// ─── ScrollReveal for section titles ─────────────────────────────
+const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({
+  children, className = '', delay = 0
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
 
-  const chars = text.split('');
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+      { threshold: 0.15 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <p ref={ref} className={className}>
-      {chars.map((char, i) => (
-        <AnimatedLetter key={i} char={char} progress={scrollYProgress} index={i} total={chars.length} />
-      ))}
-    </p>
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ${className}`}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(30px)',
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
   );
 };
 
 // ─── Main Landing Page ───────────────────────────────────────────
-
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
@@ -71,478 +110,419 @@ export const LandingPage: React.FC = () => {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const featuresInView = useInView(featuresRef, { once: true, margin: '-100px' });
-
-  const featureCards = [
-    {
-      number: '01',
-      title: 'Smart Job Matching',
-      titleHi: 'स्मार्ट जॉब मिलान',
-      icon: Search,
-      items: [
-        { en: 'Skills-based matching algorithm', hi: 'कौशल-आधारित मिलान' },
-        { en: 'Location-aware job discovery', hi: 'लोकेशन के अनुसार नौकरी खोज' },
-        { en: 'Salary range filtering', hi: 'वेतन के अनुसार फ़िल्टर' },
-        { en: 'Experience-level fit scoring', hi: 'अनुभव स्तर स्कोरिंग' },
-      ],
-    },
-    {
-      number: '02',
-      title: 'Verified Profiles',
-      titleHi: 'सत्यापित प्रोफाइल',
-      icon: Shield,
-      items: [
-        { en: 'Aadhaar & document verification', hi: 'आधार और दस्तावेज़ सत्यापन' },
-        { en: 'Business license checks', hi: 'बिजनेस लाइसेंस जांच' },
-        { en: 'Ratings & review system', hi: 'रेटिंग और समीक्षा प्रणाली' },
-      ],
-    },
-    {
-      number: '03',
-      title: 'Instant Apply',
-      titleHi: 'तुरंत आवेदन',
-      icon: Zap,
-      items: [
-        { en: 'One-tap job application', hi: 'एक टैप में आवेदन' },
-        { en: 'Resume auto-fill from photo', hi: 'फ़ोटो से रिज़्यूमे ऑटो-फ़िल' },
-        { en: 'Real-time application tracking', hi: 'रियल-टाइम आवेदन ट्रैकिंग' },
-      ],
-    },
-  ];
-
   return (
-    <div className="bg-black text-[#E1E0CC] overflow-x-hidden">
+    <div className="bg-white text-gray-900 overflow-x-hidden">
 
-      {/* ═══════════════════ HERO SECTION ═══════════════════ */}
-      <section className="h-screen p-3 md:p-6">
-        <div className="relative w-full h-full rounded-2xl md:rounded-[2rem] overflow-hidden">
-          {/* Background gradient (fallback + overlay) */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-black to-purple-900/60 z-0" />
+      {/* ═══════════════════ HERO — VIDEO BG ═══════════════════ */}
+      <section className="relative h-screen text-white">
+        {/* Video background — NO overlay */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260403_050628_c4e32401-fab4-4a27-b7a8-6e9291cd5959.mp4"
+        />
 
-          {/* Animated background shapes */}
-          <div className="absolute inset-0 z-[1] overflow-hidden">
-            <div className="absolute -top-20 -left-20 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute top-1/2 right-0 w-96 h-96 bg-purple-600/15 rounded-full blur-3xl" style={{ animation: 'pulse 4s ease-in-out infinite' }} />
-            <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl" style={{ animation: 'pulse 6s ease-in-out infinite' }} />
-          </div>
+        {/* Navbar */}
+        <div className="relative z-20 px-4 sm:px-6 md:px-12 lg:px-16 pt-4 sm:pt-6">
+          <div className="liquid-glass rounded-xl px-4 py-2.5 flex items-center justify-between">
+            <span className="text-xl sm:text-2xl font-semibold tracking-tight">LocalJobs</span>
 
-          {/* Noise overlay */}
-          <div className="absolute inset-0 z-[2] noise-overlay opacity-[0.5] mix-blend-overlay pointer-events-none" />
-
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 z-[3] bg-gradient-to-b from-black/40 via-transparent to-black/70" />
-
-          {/* Navbar */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
-            <div className="bg-black/90 backdrop-blur-sm rounded-b-2xl md:rounded-b-3xl px-4 py-2.5 md:px-8 md:py-3">
-              <div className="flex items-center gap-4 sm:gap-6 md:gap-12">
-                <span className="text-cream font-bold text-sm md:text-base">LocalJobs</span>
-                {['Features', 'How It Works', 'For Employers'].map((item) => (
-                  <button
-                    key={item}
-                    onClick={() => document.getElementById(item.toLowerCase().replace(/\s/g, '-'))?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-[10px] sm:text-xs md:text-sm font-medium transition-colors hidden sm:block"
-                    style={{ color: 'rgba(225, 224, 204, 0.7)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = '#E1E0CC')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(225, 224, 204, 0.7)')}
-                  >
-                    {item}
-                  </button>
-                ))}
-                <button
-                  onClick={() => navigate('/auth/phone')}
-                  className="text-[10px] sm:text-xs md:text-sm font-bold text-black bg-cream px-3 py-1.5 rounded-full"
-                >
-                  Login
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Hero content — bottom aligned */}
-          <div className="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6 md:p-10 lg:p-14">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-end">
-              {/* Giant heading */}
-              <div className="lg:col-span-8">
-                <WordsPullUp
-                  text="Local Jobs"
-                  className="text-[18vw] sm:text-[16vw] md:text-[14vw] lg:text-[12vw] xl:text-[11vw] font-bold leading-[0.85] tracking-[-0.04em]"
-                />
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.6 }}
-                  className="text-cream/60 text-sm sm:text-base md:text-lg mt-2 font-light"
-                >
-                  अपने शहर में नौकरी पाएं
-                </motion.p>
-              </div>
-
-              {/* Right column — description + CTA */}
-              <div className="lg:col-span-4 space-y-4 sm:space-y-6 pb-2">
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="text-cream/70 text-xs sm:text-sm md:text-base leading-[1.3]"
-                >
-                  India's hyperlocal job platform connecting workers and employers in Tier 2 & 3 cities.
-                  No resume needed. Direct contact. Verified profiles.
-                </motion.p>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="text-cream/50 text-xs sm:text-sm leading-[1.3]"
-                >
-                  भारत का हाइपरलोकल जॉब प्लेटफॉर्म। बिना रिज़्यूमे के आवेदन करें। सीधा संपर्क। सत्यापित प्रोफाइल।
-                </motion.p>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col sm:flex-row gap-3"
-                >
-                  <button
-                    onClick={() => navigate('/auth/phone')}
-                    className="group inline-flex items-center gap-2 bg-cream text-black font-bold px-5 py-3 sm:px-6 sm:py-3.5 rounded-full text-sm sm:text-base hover:gap-3 transition-all min-h-[48px]"
-                  >
-                    <span>Find Jobs / नौकरी खोजें</span>
-                    <span className="bg-black rounded-full w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <ArrowRight className="w-4 h-4 text-cream" />
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => navigate('/auth/phone')}
-                    className="inline-flex items-center justify-center gap-2 border border-cream/30 text-cream font-medium px-5 py-3 rounded-full text-sm hover:border-cream/60 transition-all min-h-[48px]"
-                  >
-                    Hire Workers / वर्कर ढूंढें
-                  </button>
-                </motion.div>
-
-                {/* Stats */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1, duration: 0.8 }}
-                  className="flex gap-6 pt-2"
-                >
-                  {[
-                    { value: '500+', label: 'Jobs', labelHi: 'नौकरियां' },
-                    { value: '2000+', label: 'Workers', labelHi: 'कामगार' },
-                    { value: '150+', label: 'Employers', labelHi: 'नियोक्ता' },
-                  ].map((stat, i) => (
-                    <div key={i} className="text-center">
-                      <div className="text-lg sm:text-xl font-bold text-cream">{stat.value}</div>
-                      <div className="text-[10px] sm:text-xs text-cream/50">{stat.label} / {stat.labelHi}</div>
-                    </div>
-                  ))}
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════ ABOUT SECTION ═══════════════════ */}
-      <section id="how-it-works" className="bg-black py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-[#101010] rounded-3xl p-6 sm:p-10 md:p-16 text-center">
-            {/* Label */}
-            <motion.span
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="text-cream text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-8 block"
-            >
-              How It Works / कैसे काम करता है
-            </motion.span>
-
-            {/* Main heading with mixed styles */}
-            <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl max-w-4xl mx-auto leading-[0.95] mb-12">
-              <WordsPullUp
-                text="Your next opportunity is"
-                className="justify-center font-normal"
-              />
-              <WordsPullUp
-                text="right in your neighborhood."
-                className="justify-center font-serif italic mt-1"
-                delay={0.3}
-              />
-              <WordsPullUp
-                text="No travel. No middlemen. Direct connection."
-                className="justify-center font-normal mt-1 text-cream/60"
-                delay={0.5}
-              />
-            </div>
-
-            {/* Scroll reveal paragraph */}
-            <ScrollRevealText
-              text="LocalJobs is built for workers and employers in Tier 2 and Tier 3 cities across India. Whether you are a delivery driver in Lucknow, a mechanic in Indore, or a shop owner in Jaipur looking for helpers, we connect you directly. No agents. No fees. Just verified people finding verified jobs."
-              className="text-cream text-xs sm:text-sm md:text-base max-w-3xl mx-auto leading-relaxed mb-8"
-            />
-
-            <ScrollRevealText
-              text="LocalJobs उन कामगारों और नियोक्ताओं के लिए बनाया गया है जो टियर 2 और टियर 3 शहरों में रहते हैं। चाहे आप लखनऊ में डिलीवरी ड्राइवर हों, इंदौर में मैकेनिक, या जयपुर में दुकानदार - हम आपको सीधे जोड़ते हैं। कोई एजेंट नहीं। कोई फीस नहीं।"
-              className="text-cream/60 text-xs sm:text-sm max-w-3xl mx-auto leading-relaxed"
-            />
-
-            {/* Steps */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <div className="hidden md:flex items-center gap-6 lg:gap-10">
               {[
-                {
-                  step: '01',
-                  icon: Phone,
-                  title: 'Sign Up with Phone',
-                  titleHi: 'फ़ोन से साइन अप करें',
-                  desc: 'OTP verification. No email needed.',
-                  descHi: 'OTP सत्यापन। ईमेल की जरूरत नहीं।',
-                },
-                {
-                  step: '02',
-                  icon: Search,
-                  title: 'Find or Post Jobs',
-                  titleHi: 'नौकरी खोजें या पोस्ट करें',
-                  desc: 'Workers browse. Employers post. AI matches both.',
-                  descHi: 'कामगार खोजें। नियोक्ता पोस्ट करें। AI दोनों को जोड़े।',
-                },
-                {
-                  step: '03',
-                  icon: Users,
-                  title: 'Connect Directly',
-                  titleHi: 'सीधा संपर्क करें',
-                  desc: 'Verified contact sharing. No middlemen.',
-                  descHi: 'सत्यापित संपर्क। कोई बिचौलिया नहीं।',
-                },
-              ].map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="bg-black/50 rounded-2xl p-6 text-center"
+                { en: 'Features', id: 'features' },
+                { en: 'How It Works', id: 'how-it-works' },
+                { en: 'Job Types', id: 'job-types' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' })}
+                  className="text-sm text-white/80 hover:text-white transition-colors"
                 >
-                  <div className="w-14 h-14 bg-cream/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <item.icon className="w-7 h-7 text-cream" />
-                  </div>
-                  <div className="text-cream/40 text-xs mb-2">{item.step}</div>
-                  <h3 className="text-lg font-bold text-cream mb-1">{item.title}</h3>
-                  <p className="text-cream/50 text-sm mb-2">{item.titleHi}</p>
-                  <p className="text-cream/40 text-xs">{item.desc}</p>
-                  <p className="text-cream/30 text-xs">{item.descHi}</p>
-                </motion.div>
+                  {item.en}
+                </button>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ═══════════════════ FEATURES SECTION ═══════════════════ */}
-      <section id="features" className="min-h-screen bg-black py-16 sm:py-24 px-4 sm:px-6 relative">
-        {/* Noise background */}
-        <div className="absolute inset-0 bg-noise opacity-[0.08] pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto relative z-10">
-          {/* Header */}
-          <div className="text-center mb-12 sm:mb-16">
-            <WordsPullUp
-              text="Built for workers and employers who mean business."
-              className="justify-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-normal max-w-4xl mx-auto"
-            />
-            <WordsPullUp
-              text="Simple tools. Real results. Zero fees."
-              className="justify-center text-xl sm:text-2xl md:text-3xl lg:text-4xl font-normal text-gray-500 mt-2"
-              delay={0.3}
-            />
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="text-cream/40 text-sm sm:text-base mt-4 max-w-xl mx-auto"
-            >
-              कामगारों और नियोक्ताओं के लिए बनाया गया। सरल टूल्स। असली नतीजे। शून्य शुल्क।
-            </motion.p>
-          </div>
-
-          {/* Feature cards grid */}
-          <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* Card 1 — Hero visual card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={featuresInView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: 0, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="lg:row-span-1 bg-gradient-to-br from-blue-900/40 to-purple-900/30 rounded-2xl overflow-hidden relative min-h-[280px] lg:min-h-0 flex items-end"
-            >
-              {/* Decorative elements */}
-              <div className="absolute inset-0">
-                <div className="absolute top-6 left-6">
-                  <Briefcase className="w-16 h-16 text-cream/10" />
-                </div>
-                <div className="absolute top-1/2 right-8 -translate-y-1/2">
-                  <Search className="w-32 h-32 text-cream/5" strokeWidth={1} />
-                </div>
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2">
-                  <MapPin className="w-20 h-20 text-cream/8" />
-                </div>
-              </div>
-              <div className="relative z-10 p-5 sm:p-6">
-                <p className="text-cream text-lg sm:text-xl font-bold leading-tight">
-                  Your local job marketplace.
-                </p>
-                <p className="text-cream/50 text-sm mt-1">
-                  आपका स्थानीय नौकरी बाज़ार।
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Feature cards 2-4 */}
-            {featureCards.map((card, i) => (
-              <motion.div
-                key={card.number}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={featuresInView ? { opacity: 1, scale: 1 } : {}}
-                transition={{ delay: (i + 1) * 0.15, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                className="bg-[#212121] rounded-2xl p-5 sm:p-6 flex flex-col"
-              >
-                {/* Icon */}
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-cream/10 rounded-xl flex items-center justify-center mb-4">
-                  <card.icon className="w-5 h-5 sm:w-6 sm:h-6 text-cream" />
-                </div>
-
-                {/* Title with number */}
-                <div className="mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-cream">
-                    {card.title}
-                    <span className="text-cream/30 text-xs ml-2">({card.number})</span>
-                  </h3>
-                  <p className="text-cream/40 text-xs sm:text-sm">{card.titleHi}</p>
-                </div>
-
-                {/* Checklist */}
-                <div className="space-y-2.5 flex-1">
-                  {card.items.map((item, j) => (
-                    <div key={j} className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-cream/70 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <span className="text-gray-400 text-xs sm:text-sm block">{item.en}</span>
-                        <span className="text-gray-500 text-[10px] sm:text-xs block">{item.hi}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Learn more */}
-                <button
-                  onClick={() => navigate('/auth/phone')}
-                  className="mt-4 inline-flex items-center gap-1 text-cream/60 text-xs sm:text-sm hover:text-cream transition-colors group"
-                >
-                  Get Started
-                  <ArrowRight className="w-3 h-3 -rotate-45 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </button>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Job categories showcase */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="mt-8 bg-[#101010] rounded-2xl p-6 sm:p-8"
-          >
-            <h3 className="text-cream text-lg sm:text-xl font-bold mb-2">Available Job Categories / उपलब्ध नौकरियां</h3>
-            <div className="flex flex-wrap gap-2 sm:gap-3 mt-4">
-              {[
-                { en: 'Delivery', hi: 'डिलीवरी' },
-                { en: 'Driver', hi: 'ड्राइवर' },
-                { en: 'Mechanic', hi: 'मैकेनिक' },
-                { en: 'Helper', hi: 'हेल्पर' },
-                { en: 'Security', hi: 'सुरक्षा' },
-                { en: 'Cook', hi: 'रसोइया' },
-                { en: 'Electrician', hi: 'इलेक्ट्रीशियन' },
-                { en: 'Plumber', hi: 'प्लंबर' },
-                { en: 'Sales', hi: 'सेल्स' },
-                { en: 'Cleaner', hi: 'सफाई' },
-                { en: 'Tailor', hi: 'दर्जी' },
-                { en: 'Painter', hi: 'पेंटर' },
-              ].map((cat, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-2 sm:px-4 sm:py-2.5 bg-cream/5 hover:bg-cream/10 rounded-full text-cream/70 text-xs sm:text-sm font-medium transition-colors cursor-default"
-                >
-                  {cat.en} / {cat.hi}
-                </span>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ═══════════════════ CTA SECTION ═══════════════════ */}
-      <section id="for-employers" className="bg-black py-16 sm:py-24 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <WordsPullUp
-            text="Ready to find your next opportunity?"
-            className="justify-center text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold"
-          />
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="text-cream/50 text-base sm:text-lg mt-4 mb-3"
-          >
-            Join thousands of workers and employers already on LocalJobs.
-          </motion.p>
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-            className="text-cream/35 text-sm sm:text-base mb-8"
-          >
-            हज़ारों कामगार और नियोक्ता पहले से LocalJobs पर हैं। अभी शुरू करें — यह मुफ़्त है।
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
             <button
               onClick={() => navigate('/auth/phone')}
-              className="group inline-flex items-center justify-center gap-2 bg-cream text-black font-bold px-8 py-4 rounded-full text-base sm:text-lg hover:gap-3 transition-all min-h-[56px]"
+              className="bg-white text-black px-4 sm:px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors min-h-[40px]"
             >
-              <span>Start Now / अभी शुरू करें</span>
-              <span className="bg-black rounded-full w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 text-cream" />
-              </span>
+              Login / लॉगिन
             </button>
-          </motion.div>
+          </div>
+        </div>
+
+        {/* Hero content — bottom aligned */}
+        <div className="relative z-10 h-full flex flex-col justify-end px-4 sm:px-6 md:px-12 lg:px-16 pb-8 sm:pb-12 lg:pb-16">
+          <div className="lg:grid lg:grid-cols-2 lg:items-end gap-8">
+            {/* Left — heading */}
+            <div>
+              <AnimatedHeading
+                text={"अपने शहर में\nनौकरी पाएं"}
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-medium mb-4"
+                />
+
+              <FadeIn delay={800} duration={1000}>
+                <p className="text-lg sm:text-xl md:text-2xl text-gray-200 mb-5 max-w-xl" style={{ letterSpacing: '-0.02em' }}>
+                  Find trusted jobs near you. Apply without resume. Direct employer contact.
+                </p>
+              </FadeIn>
+
+              <FadeIn delay={1200} duration={1000}>
+                <div className="flex flex-wrap gap-3 sm:gap-4">
+                  <button
+                    onClick={() => navigate('/auth/phone')}
+                    className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-semibold text-base sm:text-lg min-h-[52px] hover:bg-gray-100 transition-colors"
+                  >
+                    नौकरी खोजें / Find Jobs
+                  </button>
+                  <button
+                    onClick={() => navigate('/auth/phone')}
+                    className="liquid-glass border border-white/20 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-medium text-base sm:text-lg min-h-[52px] hover:bg-white hover:text-black transition-all"
+                  >
+                    वर्कर ढूंढें / Hire Workers
+                  </button>
+                </div>
+              </FadeIn>
+            </div>
+
+            {/* Right — tag */}
+            <FadeIn delay={1400} duration={1000} className="mt-6 lg:mt-0 flex items-end justify-start lg:justify-end">
+              <div className="liquid-glass border border-white/20 px-5 sm:px-6 py-3 rounded-xl">
+                <p className="text-lg sm:text-xl lg:text-2xl font-light">
+                  Delivery. Driver. Mechanic. Helper.
+                </p>
+                <p className="text-sm sm:text-base text-white/60 mt-1">
+                  डिलीवरी। ड्राइवर। मैकेनिक। हेल्पर।
+                </p>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ STATS BAR ═══════════════════ */}
+      <section className="bg-blue-600 py-6 sm:py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-3 gap-4 text-center text-white">
+            {[
+              { value: '500+', en: 'Active Jobs', hi: 'सक्रिय नौकरियां' },
+              { value: '2000+', en: 'Workers', hi: 'कामगार' },
+              { value: '150+', en: 'Employers', hi: 'नियोक्ता' },
+            ].map((stat, i) => (
+              <ScrollReveal key={i} delay={i * 100}>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">{stat.value}</div>
+                <div className="text-sm sm:text-base font-medium mt-1">{stat.en}</div>
+                <div className="text-xs sm:text-sm text-white/70">{stat.hi}</div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ HOW IT WORKS ═══════════════════ */}
+      <section id="how-it-works" className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                कैसे काम करता है?
+              </h2>
+              <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+                3 आसान स्टेप में अपनी नौकरी पाएं
+              </p>
+              <p className="text-base sm:text-lg text-gray-500 mt-1">
+                Get started in 3 simple steps
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                step: '01',
+                icon: Phone,
+                color: 'bg-blue-100 text-blue-600',
+                title: 'फ़ोन से साइन अप',
+                titleEn: 'Sign Up with Phone',
+                desc: 'अपना फ़ोन नंबर डालें, OTP आएगा, बस हो गया। ईमेल की ज़रूरत नहीं।',
+                descEn: 'Enter phone, get OTP, done. No email needed.',
+              },
+              {
+                step: '02',
+                icon: Search,
+                color: 'bg-green-100 text-green-600',
+                title: 'नौकरी खोजें या पोस्ट करें',
+                titleEn: 'Find or Post Jobs',
+                desc: 'कामगार अपने शहर में नौकरी ढूंढें। नियोक्ता अपनी ज़रूरत पोस्ट करें।',
+                descEn: 'Workers find jobs nearby. Employers post requirements.',
+              },
+              {
+                step: '03',
+                icon: Users,
+                color: 'bg-purple-100 text-purple-600',
+                title: 'सीधा संपर्क करें',
+                titleEn: 'Connect Directly',
+                desc: 'सत्यापित संपर्क नंबर मिलेगा। कोई बिचौलिया नहीं। कोई फीस नहीं।',
+                descEn: 'Get verified contact. No middlemen. No fees.',
+              },
+            ].map((item, i) => (
+              <ScrollReveal key={i} delay={i * 150}>
+                <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-lg transition-shadow h-full">
+                  <div className={`w-14 h-14 sm:w-16 sm:h-16 ${item.color} rounded-2xl flex items-center justify-center mb-5`}>
+                    <item.icon className="w-7 h-7 sm:w-8 sm:h-8" />
+                  </div>
+                  <div className="text-gray-400 text-sm font-medium mb-2">Step {item.step}</div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{item.title}</h3>
+                  <p className="text-base sm:text-lg text-blue-600 font-medium mb-3">{item.titleEn}</p>
+                  <p className="text-base sm:text-lg text-gray-700 leading-relaxed mb-2">{item.desc}</p>
+                  <p className="text-sm sm:text-base text-gray-500">{item.descEn}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FEATURES ═══════════════════ */}
+      <section id="features" className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                LocalJobs क्यों चुनें?
+              </h2>
+              <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
+                Why choose LocalJobs?
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            {[
+              {
+                icon: MapPin,
+                color: 'bg-blue-50 text-blue-600 border-blue-100',
+                title: 'अपने पास की नौकरी',
+                titleEn: 'Hyperlocal Jobs',
+                desc: 'अपने मोहल्ले और शहर में ही नौकरी पाएं।',
+                descEn: 'Find jobs in your exact neighborhood.',
+                checks: ['City-wise search / शहर के अनुसार', 'Area-level matching / एरिया लेवल'],
+              },
+              {
+                icon: Shield,
+                color: 'bg-green-50 text-green-600 border-green-100',
+                title: 'सत्यापित प्रोफाइल',
+                titleEn: 'Verified Profiles',
+                desc: 'सभी कामगार और नियोक्ता आधार से सत्यापित।',
+                descEn: 'All workers & employers Aadhaar verified.',
+                checks: ['Document verification / दस्तावेज़ सत्यापन', 'Rating system / रेटिंग सिस्टम'],
+              },
+              {
+                icon: Zap,
+                color: 'bg-yellow-50 text-yellow-600 border-yellow-100',
+                title: 'तुरंत आवेदन',
+                titleEn: 'Instant Apply',
+                desc: 'एक टैप में आवेदन। रिज़्यूमे की ज़रूरत नहीं।',
+                descEn: 'One-tap apply. No resume needed.',
+                checks: ['Photo se auto-fill / फोटो से ऑटो-फ़िल', 'Real-time tracking / रियल-टाइम ट्रैकिंग'],
+              },
+              {
+                icon: Briefcase,
+                color: 'bg-purple-50 text-purple-600 border-purple-100',
+                title: 'स्मार्ट मिलान',
+                titleEn: 'Smart Matching',
+                desc: 'आपके कौशल और अनुभव के अनुसार सही नौकरी।',
+                descEn: 'Right job based on your skills & experience.',
+                checks: ['Skill matching / कौशल मिलान', 'Salary filter / वेतन फ़िल्टर'],
+              },
+              {
+                icon: Clock,
+                color: 'bg-orange-50 text-orange-600 border-orange-100',
+                title: 'तुरंत जवाब',
+                titleEn: 'Quick Response',
+                desc: 'नियोक्ता 24 घंटे में जवाब देते हैं।',
+                descEn: 'Employers respond within 24 hours.',
+                checks: ['Status updates / स्टेटस अपडेट', 'Notification alerts / सूचना'],
+              },
+              {
+                icon: Star,
+                color: 'bg-pink-50 text-pink-600 border-pink-100',
+                title: 'बिल्कुल मुफ़्त',
+                titleEn: 'Completely Free',
+                desc: 'कामगारों के लिए सब कुछ मुफ़्त। कोई छिपा शुल्क नहीं।',
+                descEn: 'Everything free for workers. No hidden charges.',
+                checks: ['Free apply / मुफ़्त आवेदन', 'Free profile / मुफ़्त प्रोफाइल'],
+              },
+            ].map((feature, i) => (
+              <ScrollReveal key={i} delay={i * 100}>
+                <div className={`rounded-2xl p-5 sm:p-6 border ${feature.color.split(' ')[2]} hover:shadow-md transition-shadow h-full`}>
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 ${feature.color.split(' ').slice(0, 2).join(' ')} rounded-xl flex items-center justify-center mb-4`}>
+                    <feature.icon className="w-6 h-6 sm:w-7 sm:h-7" />
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">{feature.title}</h3>
+                  <p className="text-sm sm:text-base font-medium text-blue-600 mb-2">{feature.titleEn}</p>
+                  <p className="text-base sm:text-lg text-gray-700 mb-3">{feature.desc}</p>
+                  <p className="text-sm text-gray-500 mb-3">{feature.descEn}</p>
+
+                  <div className="space-y-2">
+                    {feature.checks.map((check, j) => (
+                      <div key={j} className="flex items-center gap-2">
+                        <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" />
+                        <span className="text-sm sm:text-base text-gray-600">{check}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ JOB CATEGORIES ═══════════════════ */}
+      <section id="job-types" className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <ScrollReveal>
+            <div className="text-center mb-10 sm:mb-14">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                उपलब्ध नौकरियां
+              </h2>
+              <p className="text-lg sm:text-xl text-gray-600">
+                Available Job Categories
+              </p>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+            {[
+              { en: 'Delivery', hi: 'डिलीवरी', icon: '🛵' },
+              { en: 'Driver', hi: 'ड्राइवर', icon: '🚗' },
+              { en: 'Mechanic', hi: 'मैकेनिक', icon: '🔧' },
+              { en: 'Helper', hi: 'हेल्पर', icon: '🤝' },
+              { en: 'Security', hi: 'सुरक्षा गार्ड', icon: '🛡️' },
+              { en: 'Cook', hi: 'रसोइया', icon: '👨‍🍳' },
+              { en: 'Electrician', hi: 'इलेक्ट्रीशियन', icon: '⚡' },
+              { en: 'Plumber', hi: 'प्लंबर', icon: '🔩' },
+              { en: 'Sales', hi: 'सेल्स', icon: '🏪' },
+              { en: 'Cleaner', hi: 'सफाई कर्मी', icon: '🧹' },
+              { en: 'Tailor', hi: 'दर्जी', icon: '🧵' },
+              { en: 'Painter', hi: 'पेंटर', icon: '🎨' },
+            ].map((cat, i) => (
+              <ScrollReveal key={i} delay={i * 50}>
+                <div
+                  onClick={() => navigate('/auth/phone')}
+                  className="bg-white rounded-xl p-4 sm:p-5 text-center border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
+                >
+                  <div className="text-3xl sm:text-4xl mb-2">{cat.icon}</div>
+                  <div className="text-base sm:text-lg font-bold text-gray-900">{cat.hi}</div>
+                  <div className="text-sm sm:text-base text-gray-500">{cat.en}</div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FOR EMPLOYERS ═══════════════════ */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-blue-600 rounded-3xl p-6 sm:p-10 md:p-14 text-white text-center">
+            <ScrollReveal>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                नियोक्ताओं के लिए
+              </h2>
+              <p className="text-lg sm:text-xl md:text-2xl font-medium text-blue-100 mb-3">
+                For Employers — Find Workers Fast
+              </p>
+              <p className="text-base sm:text-lg text-blue-200 max-w-2xl mx-auto mb-8">
+                अपने बिजनेस के लिए सही कामगार ढूंढें। जॉब पोस्ट करें, आवेदन देखें, सीधा संपर्क करें।
+                Post jobs, review applications, hire directly.
+              </p>
+            </ScrollReveal>
+
+            <ScrollReveal delay={200}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
+                {[
+                  { value: 'मुफ़्त', sub: 'Free to Post', desc: 'जॉब पोस्ट करना मुफ़्त' },
+                  { value: '24 घंटे', sub: '24 Hour Response', desc: 'तुरंत आवेदन मिलेंगे' },
+                  { value: 'सत्यापित', sub: 'Verified Workers', desc: 'आधार से सत्यापित कामगार' },
+                ].map((item, i) => (
+                  <div key={i} className="bg-white/10 rounded-xl p-4 sm:p-5">
+                    <div className="text-xl sm:text-2xl font-bold">{item.value}</div>
+                    <div className="text-sm sm:text-base font-medium text-blue-100">{item.sub}</div>
+                    <div className="text-xs sm:text-sm text-blue-200 mt-1">{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </ScrollReveal>
+
+            <ScrollReveal delay={400}>
+              <button
+                onClick={() => navigate('/auth/phone')}
+                className="inline-flex items-center gap-2 bg-white text-blue-600 font-bold px-8 sm:px-10 py-4 rounded-xl text-lg sm:text-xl hover:bg-blue-50 transition-colors min-h-[56px]"
+              >
+                <span>अभी शुरू करें / Get Started</span>
+                <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ CTA ═══════════════════ */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50">
+        <div className="max-w-3xl mx-auto text-center">
+          <ScrollReveal>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              आज ही शुरू करें
+            </h2>
+            <p className="text-xl sm:text-2xl text-gray-600 mb-3">
+              Start Today — It's Free
+            </p>
+            <p className="text-base sm:text-lg text-gray-500 mb-8 max-w-xl mx-auto">
+              हज़ारों कामगार और नियोक्ता पहले से LocalJobs पर हैं। अपने फ़ोन नंबर से 1 मिनट में साइन अप करें।
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal delay={200}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate('/auth/phone')}
+                className="inline-flex items-center justify-center gap-3 bg-blue-600 text-white font-bold px-8 sm:px-10 py-4 rounded-xl text-lg sm:text-xl hover:bg-blue-700 transition-colors min-h-[56px]"
+              >
+                <span>नौकरी खोजें / Find Jobs</span>
+                <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              <button
+                onClick={() => navigate('/auth/phone')}
+                className="inline-flex items-center justify-center gap-3 bg-white text-gray-900 font-bold px-8 sm:px-10 py-4 rounded-xl text-lg sm:text-xl border-2 border-gray-200 hover:border-blue-300 transition-colors min-h-[56px]"
+              >
+                <span>वर्कर ढूंढें / Hire</span>
+              </button>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══════════════════ FOOTER ═══════════════════ */}
-      <footer className="bg-[#0a0a0a] border-t border-cream/10 py-8 sm:py-12 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="bg-gray-900 text-gray-300 py-8 sm:py-12 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <Briefcase className="w-6 h-6 text-cream/60" />
-            <span className="text-lg font-bold text-cream">LocalJobs</span>
+            <Briefcase className="w-6 h-6 text-blue-400" />
+            <span className="text-lg sm:text-xl font-bold text-white">LocalJobs</span>
           </div>
           <div className="text-center md:text-right">
-            <p className="text-cream/30 text-sm">
-              Connecting local workers with local jobs / स्थानीय कामगारों को स्थानीय नौकरियों से जोड़ना
+            <p className="text-sm sm:text-base text-gray-400">
+              स्थानीय कामगारों को स्थानीय नौकरियों से जोड़ना
             </p>
-            <p className="text-cream/20 text-xs mt-2">&copy; 2024 LocalJobs. All rights reserved.</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              Connecting local workers with local jobs
+            </p>
+            <p className="text-xs text-gray-600 mt-2">&copy; 2024 LocalJobs. All rights reserved.</p>
           </div>
         </div>
       </footer>
