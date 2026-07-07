@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, ClipboardList, User, Bell, Briefcase, Users, LogOut, Settings } from 'lucide-react';
+import { Home, Search, ClipboardList, User, Bell, Briefcase, Users, LogOut, Settings, Calendar, CreditCard } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useAppStore } from '../store/appStore';
 
@@ -24,8 +24,8 @@ const employerTabs: NavItem[] = [
   { path: '/employer/dashboard', icon: Home, labelEn: 'Home', labelHi: 'होम' },
   { path: '/employer/jobs', icon: Briefcase, labelEn: 'Jobs', labelHi: 'नौकरी' },
   { path: '/employer/post-job', icon: ClipboardList, labelEn: 'Post', labelHi: 'पोस्ट' },
-  { path: '/employer/browse-workers', icon: Users, labelEn: 'Workers', labelHi: 'कामगार' },
-  { path: '/employer/profile', icon: User, labelEn: 'Profile', labelHi: 'प्रोफाइल' },
+  { path: '/employer/interviews', icon: Calendar, labelEn: 'Interviews', labelHi: 'इंटरव्यू' },
+  { path: '/employer/pricing', icon: CreditCard, labelEn: 'Credits', labelHi: 'क्रेडिट' },
 ];
 
 const adminTabs: NavItem[] = [

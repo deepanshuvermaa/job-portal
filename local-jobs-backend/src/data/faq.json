@@ -1,0 +1,72 @@
+[
+  {
+    "question": "Is LocalJobs free?",
+    "question_hindi": "क्या LocalJobs मुफ्त है?",
+    "answer": "Yes, LocalJobs is completely free for job seekers. You can create your profile, search jobs, and apply without any charges. Employers can post their first job for free and get 2 interview credits per month on the free plan.",
+    "answer_hindi": "हां, नौकरी खोजने वालों के लिए LocalJobs पूरी तरह मुफ्त है। आप बिना किसी शुल्क के अपनी प्रोफाइल बना सकते हैं, नौकरी खोज सकते हैं और आवेदन कर सकते हैं।",
+    "category": "general"
+  },
+  {
+    "question": "How do I post a job?",
+    "question_hindi": "मैं नौकरी कैसे पोस्ट करूं?",
+    "answer": "Sign up as an employer, complete your business profile with verification documents, and click 'Post a Job'. Fill in the job details including title, description, salary range, and location. Your job will be reviewed by our team and published within 24 hours.",
+    "answer_hindi": "एक नियोक्ता के रूप में साइन अप करें, अपनी व्यावसायिक प्रोफ़ाइल पूरी करें और 'नौकरी पोस्ट करें' पर क्लिक करें। नौकरी का विवरण भरें। आपकी नौकरी 24 घंटे के भीतर प्रकाशित हो जाएगी।",
+    "category": "employer"
+  },
+  {
+    "question": "How does verification work?",
+    "question_hindi": "सत्यापन कैसे काम करता है?",
+    "answer": "Workers verify their identity by uploading their Aadhaar card (front and back). Our system uses OCR to extract details and our admin team reviews the documents. Employers verify by submitting GST certificate, PAN card, or business license. Verified profiles get a trust badge and higher visibility.",
+    "answer_hindi": "कर्मचारी अपना आधार कार्ड अपलोड करके अपनी पहचान सत्यापित करते हैं। हमारी टीम दस्तावेजों की समीक्षा करती है। नियोक्ता GST प्रमाणपत्र, PAN कार्ड या व्यापार लाइसेंस जमा करके सत्यापित करते हैं।",
+    "category": "general"
+  },
+  {
+    "question": "How quickly can I hire someone?",
+    "question_hindi": "मैं कितनी जल्दी किसी को काम पर रख सकता हूं?",
+    "answer": "Most employers receive their first applications within 24-48 hours of posting a job. Once you shortlist candidates, you can schedule interviews immediately using interview credits. Many employers complete their first hire within a week.",
+    "answer_hindi": "अधिकांश नियोक्ताओं को नौकरी पोस्ट करने के 24-48 घंटों के भीतर पहले आवेदन मिलते हैं। उम्मीदवारों को शॉर्टलिस्ट करने के बाद, आप इंटरव्यू क्रेडिट का उपयोग करके तुरंत इंटरव्यू शेड्यूल कर सकते हैं।",
+    "category": "employer"
+  },
+  {
+    "question": "Is my data safe?",
+    "question_hindi": "क्या मेरा डेटा सुरक्षित है?",
+    "answer": "Yes, we take data security very seriously. Your personal information like phone number and Aadhaar details are encrypted and never shared publicly. Contact details are only shared after admin approval when both parties agree to connect. We use industry-standard encryption and security practices.",
+    "answer_hindi": "हां, हम डेटा सुरक्षा को बहुत गंभीरता से लेते हैं। आपकी व्यक्तिगत जानकारी जैसे फोन नंबर और आधार विवरण एन्क्रिप्टेड हैं और कभी भी सार्वजनिक रूप से साझा नहीं किए जाते। संपर्क विवरण केवल व्यवस्थापक की अनुमति के बाद ही साझा किए जाते हैं।",
+    "category": "general"
+  },
+  {
+    "question": "How do interview credits work?",
+    "question_hindi": "इंटरव्यू क्रेडिट कैसे काम करते हैं?",
+    "answer": "Interview credits allow employers to schedule interviews with shortlisted candidates. Each interview scheduling costs 1 credit. Free plan includes 2 credits per month. You can buy additional credits in packs of 5, 15, 30, or 50, or upgrade to a subscription plan for more monthly credits.",
+    "answer_hindi": "इंटरव्यू क्रेडिट नियोक्ताओं को शॉर्टलिस्ट किए गए उम्मीदवारों के साथ इंटरव्यू शेड्यूल करने की अनुमति देते हैं। प्रत्येक इंटरव्यू शेड्यूलिंग में 1 क्रेडिट खर्च होता है। मुफ्त योजना में प्रति माह 2 क्रेडिट शामिल हैं।",
+    "category": "employer"
+  },
+  {
+    "question": "What are the subscription plans?",
+    "question_hindi": "सदस्यता योजनाएं क्या हैं?",
+    "answer": "We offer three plans: Free (1 active job, 2 credits/month), Starter at ₹499/month (5 active jobs, 15 credits/month), and Growth at ₹1,499/month (20 active jobs, 50 credits/month with featured listings). Enterprise plans are available for larger organizations with custom requirements.",
+    "answer_hindi": "हम तीन योजनाएं प्रदान करते हैं: मुफ्त (1 सक्रिय नौकरी, 2 क्रेडिट/माह), स्टार्टर ₹499/माह (5 सक्रिय नौकरियां, 15 क्रेडिट/माह), और ग्रोथ ₹1,499/माह (20 सक्रिय नौकरियां, 50 क्रेडिट/माह)।",
+    "category": "employer"
+  },
+  {
+    "question": "How do I contact support?",
+    "question_hindi": "मैं सहायता से कैसे संपर्क करूं?",
+    "answer": "You can reach our support team through the in-app chat widget, email us at support@localjobs.in, or call our helpline. We typically respond within 4-6 hours during business hours. For urgent issues, please use the phone helpline.",
+    "answer_hindi": "आप इन-ऐप चैट विजेट के माध्यम से, support@localjobs.in पर ईमेल करके, या हमारी हेल्पलाइन पर कॉल करके हमारी सहायता टीम से संपर्क कर सकते हैं। हम आमतौर पर कार्य समय के दौरान 4-6 घंटों के भीतर जवाब देते हैं।",
+    "category": "general"
+  },
+  {
+    "question": "Can I get a refund on credits?",
+    "question_hindi": "क्या मुझे क्रेडिट पर रिफंड मिल सकता है?",
+    "answer": "Unused credits can be refunded within 7 days of purchase. Once credits are used to schedule interviews, they cannot be refunded. Subscription cancellations take effect at the end of the current billing cycle. Contact support for refund requests.",
+    "answer_hindi": "अप्रयुक्त क्रेडिट खरीद के 7 दिनों के भीतर वापस किए जा सकते हैं। एक बार इंटरव्यू शेड्यूल करने के लिए उपयोग किए गए क्रेडिट वापस नहीं किए जा सकते। सदस्यता रद्दीकरण वर्तमान बिलिंग चक्र के अंत में प्रभावी होता है।",
+    "category": "employer"
+  },
+  {
+    "question": "How do I apply for a job?",
+    "question_hindi": "मैं नौकरी के लिए कैसे आवेदन करूं?",
+    "answer": "Browse available jobs on the homepage or use search filters to find relevant opportunities. Click on a job to view details, then tap 'Apply Now'. You can add a cover letter and expected salary. You can apply to up to 10 jobs per day. Track all your applications from your dashboard.",
+    "answer_hindi": "होमपेज पर उपलब्ध नौकरियां ब्राउज़ करें या प्रासंगिक अवसरों को खोजने के लिए खोज फ़िल्टर का उपयोग करें। विवरण देखने के लिए किसी नौकरी पर क्लिक करें, फिर 'अभी आवेदन करें' पर टैप करें। आप प्रति दिन 10 नौकरियों तक आवेदन कर सकते हैं।",
+    "category": "worker"
+  }
+]

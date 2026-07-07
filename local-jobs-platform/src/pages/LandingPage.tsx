@@ -2,6 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, MapPin, Shield, Zap, Users, Briefcase, Phone, Search, Check, Star, Clock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import CityAutocomplete from '../components/shared/CityAutocomplete';
+import { JOB_CATEGORIES } from '../utils/constants';
+import { EmployerLogos } from '../components/landing/EmployerLogos';
+import { TestimonialsSection } from '../components/landing/TestimonialsSection';
+import { FAQSection } from '../components/landing/FAQSection';
+import { SEOFooter } from '../components/landing/SEOFooter';
+import { api } from '../services/api';
 
 // ─── ScrollReveal ────────────────────────────────────────────────
 const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({
@@ -35,10 +42,72 @@ const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; de
 };
 
 // ─── Main Landing Page ───────────────────────────────────────────
+// ─── AnimatedCounter ────────────────────────────────────────────
+const AnimatedCounter: React.FC<{ target: number; suffix?: string }> = ({ target, suffix = '' }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && !started) setStarted(true); },
+      { threshold: 0.3 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
+    const duration = 1500;
+    const steps = 40;
+    const increment = target / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(timer);
+  }, [started, target]);
+
+  return <span ref={ref}>{count.toLocaleString('en-IN')}{suffix}</span>;
+};
+
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
   const [videoLoaded, setVideoLoaded] = useState(false);
+
+  // Dual-intent hero state
+  const [jobKeyword, setJobKeyword] = useState('');
+  const [jobCity, setJobCity] = useState('');
+  const [hireJobType, setHireJobType] = useState('');
+  const [hireCity, setHireCity] = useState('');
+
+  // Dynamic stats
+  const [stats, setStats] = useState({ jobs: 500, workers: 2000, employers: 150 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/api/public/stats');
+        const s = data.data || data;
+        setStats({
+          jobs: s.jobs || s.totalJobs || 500,
+          workers: s.workers || s.totalWorkers || 2000,
+          employers: s.employers || s.totalEmployers || 150,
+        });
+      } catch {
+        // Fallback to hardcoded
+      }
+    };
+    fetchStats();
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -84,46 +153,96 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Hero content — bottom */}
-        <div className="relative z-10 min-h-screen flex flex-col justify-end px-4 sm:px-6 md:px-12 lg:px-16 pb-8 sm:pb-12 lg:pb-16">
-          <div className="max-w-5xl">
-            {/* Main Hindi heading — MASSIVE */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold leading-[1.1] mb-4 sm:mb-6" style={{ letterSpacing: '-0.03em' }}>
-              अपने शहर में<br />नौकरी पाएं
+        {/* Hero content — dual intent */}
+        <div className="relative z-10 min-h-screen flex flex-col justify-center px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 lg:py-16">
+          <div className="max-w-5xl mx-auto w-full">
+            {/* Tagline */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-2 text-center" style={{ letterSpacing: '-0.02em' }}>
+              LocalJobs
             </h1>
-
-            {/* English subtitle */}
-            <p className="text-xl sm:text-2xl md:text-3xl text-white/80 mb-6 sm:mb-8 max-w-2xl font-light">
-              Find trusted jobs near you. Apply without resume.
+            <p className="text-xl sm:text-2xl md:text-3xl text-white/80 mb-8 sm:mb-12 text-center font-light">
+              apne shahar mein naukri paaye
             </p>
 
-            {/* Hindi description — big and readable */}
-            <p className="text-lg sm:text-xl md:text-2xl text-white/60 mb-8 sm:mb-10 max-w-2xl leading-relaxed">
-              बिना रिज़्यूमे के आवेदन करें। सीधा नियोक्ता से बात करें। कोई फीस नहीं। कोई बिचौलिया नहीं।
-            </p>
+            {/* Dual panels */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
+              {/* Left panel: Find a Job */}
+              <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-5 sm:p-7">
+                <div className="flex items-center gap-3 mb-5">
+                  <Search className="w-7 h-7 text-white" />
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold">NAUKRI KHOJEIN</h2>
+                    <p className="text-base text-white/70">Find a Job</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={jobKeyword}
+                    onChange={(e) => setJobKeyword(e.target.value)}
+                    placeholder="e.g., Delivery Boy, Driver, Cook"
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40 text-base"
+                  />
+                  <CityAutocomplete
+                    value={jobCity}
+                    onChange={setJobCity}
+                    placeholder="City / शहर"
+                    className="!bg-white/10 !border-white/20 !text-white !placeholder-white/50"
+                  />
+                  <button
+                    onClick={() => navigate(`/jobs?keyword=${encodeURIComponent(jobKeyword)}&city=${encodeURIComponent(jobCity)}`)}
+                    className="w-full bg-white text-blue-700 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px] flex items-center justify-center gap-2"
+                  >
+                    Search Jobs / नौकरी खोजें
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
 
-            {/* CTA buttons — big for mobile */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <button
-                onClick={() => navigate('/auth/phone')}
-                className="bg-white text-black px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-bold text-xl sm:text-2xl min-h-[64px] hover:bg-gray-100 transition-colors flex items-center justify-center gap-3"
-              >
-                नौकरी खोजें
-                <ArrowRight className="w-6 h-6 sm:w-7 sm:h-7" />
-              </button>
-              <button
-                onClick={() => navigate('/auth/phone')}
-                className="liquid-glass border border-white/30 text-white px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-bold text-xl sm:text-2xl min-h-[64px] hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
-              >
-                वर्कर ढूंढें
-              </button>
+              {/* Right panel: Find Workers */}
+              <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-5 sm:p-7">
+                <div className="flex items-center gap-3 mb-5">
+                  <Users className="w-7 h-7 text-white" />
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold">WORKER DHUNDEIN</h2>
+                    <p className="text-base text-white/70">Find Workers</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <select
+                    value={hireJobType}
+                    onChange={(e) => setHireJobType(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-white/40 text-base"
+                  >
+                    <option value="" className="text-gray-900">Job Type / नौकरी का प्रकार</option>
+                    {JOB_CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value} className="text-gray-900">{cat.label} / {cat.labelHi}</option>
+                    ))}
+                  </select>
+                  <CityAutocomplete
+                    value={hireCity}
+                    onChange={setHireCity}
+                    placeholder="City / शहर"
+                    className="!bg-white/10 !border-white/20 !text-white !placeholder-white/50"
+                  />
+                  <button
+                    onClick={() => navigate('/auth/phone?redirect=/employer/browse-workers')}
+                    className="w-full bg-white text-blue-700 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors min-h-[48px] flex items-center justify-center gap-2"
+                  >
+                    Search Workers / वर्कर ढूंढें
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Job types pill — liquid glass */}
-            <div className="liquid-glass border border-white/20 px-5 sm:px-6 py-3 sm:py-4 rounded-xl inline-block">
-              <p className="text-xl sm:text-2xl md:text-3xl font-medium">
-                डिलीवरी · ड्राइवर · मैकेनिक · हेल्पर · सेल्स
-              </p>
+            <div className="text-center">
+              <div className="liquid-glass border border-white/20 px-5 sm:px-6 py-3 sm:py-4 rounded-xl inline-block">
+                <p className="text-xl sm:text-2xl md:text-3xl font-medium">
+                  डिलीवरी · ड्राइवर · मैकेनिक · हेल्पर · सेल्स
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -134,12 +253,14 @@ export const LandingPage: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-3 gap-4 text-center text-white">
             {[
-              { value: '500+', hi: 'नौकरियां', en: 'Jobs' },
-              { value: '2000+', hi: 'कामगार', en: 'Workers' },
-              { value: '150+', hi: 'नियोक्ता', en: 'Employers' },
+              { value: stats.jobs, hi: 'नौकरियां', en: 'Jobs' },
+              { value: stats.workers, hi: 'कामगार', en: 'Workers' },
+              { value: stats.employers, hi: 'नियोक्ता', en: 'Employers' },
             ].map((stat, i) => (
               <div key={i}>
-                <div className="text-3xl sm:text-4xl md:text-5xl font-bold">{stat.value}</div>
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold">
+                  <AnimatedCounter target={stat.value} suffix="+" />
+                </div>
                 <div className="text-lg sm:text-xl font-semibold mt-1">{stat.hi}</div>
                 <div className="text-sm sm:text-base text-white/70">{stat.en}</div>
               </div>
@@ -401,6 +522,15 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* ═══════════════════ EMPLOYER LOGOS ═══════════════════ */}
+      <EmployerLogos />
+
+      {/* ═══════════════════ TESTIMONIALS ═══════════════════ */}
+      <TestimonialsSection />
+
+      {/* ═══════════════════ FAQ ═══════════════════ */}
+      <FAQSection />
+
       {/* ═══════════════════ FINAL CTA ═══════════════════ */}
       <section className="py-16 sm:py-24 px-4 sm:px-6 bg-gray-50">
         <div className="max-w-3xl mx-auto text-center">
@@ -437,24 +567,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* ═══════════════════ FOOTER ═══════════════════ */}
-      <footer className="bg-gray-900 text-gray-300 py-10 sm:py-14 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <Briefcase className="w-7 h-7 text-blue-400" />
-            <span className="text-2xl font-bold text-white">LocalJobs</span>
-          </div>
-          <div className="text-center md:text-right">
-            <p className="text-lg text-gray-400">
-              स्थानीय कामगारों को स्थानीय नौकरियों से जोड़ना
-            </p>
-            <p className="text-base text-gray-500 mt-1">
-              Connecting local workers with local jobs
-            </p>
-            <p className="text-sm text-gray-600 mt-3">&copy; 2024 LocalJobs. All rights reserved.</p>
-            <a href="/local-job-portal/admin/login" className="text-xs text-gray-700 hover:text-gray-400 mt-2 inline-block">Admin</a>
-          </div>
-        </div>
-      </footer>
+      <SEOFooter />
     </div>
   );
 };

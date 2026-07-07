@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
 import { getEmployerJobApplications, updateApplicationStatus } from '../services/jobs';
+import { api } from '../services/api';
 import { useAppStore } from '../store/appStore';
-import { MapPin, Briefcase, Star, Clock, Shield, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, Briefcase, Star, Clock, Shield, ChevronDown, ChevronUp, CalendarPlus, AlertCircle } from 'lucide-react';
+import InterviewScheduler from '../components/employer/InterviewScheduler';
 
 export const EmployerJobApplications: React.FC = () => {
   const { jobId } = useParams();
@@ -13,6 +15,8 @@ export const EmployerJobApplications: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [schedulingAppId, setSchedulingAppId] = useState<string | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
 
   const loadApplications = async () => {
     if (!jobId) return;
@@ -27,8 +31,18 @@ export const EmployerJobApplications: React.FC = () => {
     }
   };
 
+  const loadCredits = async () => {
+    try {
+      const { data } = await api.get('/api/payments/credits');
+      setCredits(data.data?.credits ?? data.credits ?? 0);
+    } catch {
+      setCredits(0);
+    }
+  };
+
   useEffect(() => {
     loadApplications();
+    loadCredits();
   }, [jobId]);
 
   const handleStatusChange = async (applicationId: string, status: string) => {
@@ -51,6 +65,26 @@ export const EmployerJobApplications: React.FC = () => {
         <p className="text-gray-500 text-sm">
           {hi('एडमिन द्वारा अप्रूव किए गए उम्मीदवार यहां दिखेंगे', 'Admin-approved candidates appear here')}
         </p>
+
+        {credits !== null && (
+          <div className={`p-3 rounded-lg text-sm flex items-center justify-between ${credits > 0 ? 'bg-blue-50 border border-blue-200' : 'bg-orange-50 border border-orange-200'}`}>
+            {credits > 0 ? (
+              <span className="text-blue-700 font-medium">
+                {hi(`इंटरव्यू क्रेडिट बचे: ${credits}`, `Interview credits remaining: ${credits}`)}
+              </span>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                <AlertCircle size={16} className="text-orange-600" />
+                <span className="text-orange-700 font-medium">
+                  {hi('इंटरव्यू शेड्यूल करने के लिए क्रेडिट चाहिए।', 'You need interview credits to schedule interviews.')}
+                </span>
+                <Link to="/employer/pricing" className="text-blue-600 font-semibold underline ml-1">
+                  {hi('क्रेडिट खरीदें', 'Buy Credits')}
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {error && (
           <div className="p-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg">{error}</div>
@@ -197,11 +231,11 @@ export const EmployerJobApplications: React.FC = () => {
                       {/* Contact info notice */}
                       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
                         <p className="text-sm text-yellow-800 font-medium">
-                          🔒 {hi('फ़ोन नंबर और रिज़्यूमे सुरक्षित है', 'Phone & resume are protected')}
+                          {hi('संपर्क जानकारी सुरक्षित है', 'Contact details are protected')}
                         </p>
                         <p className="text-xs text-yellow-700 mt-1">
-                          {hi('"हायर करें" दबाएं, एडमिन आपको उम्मीदवार से जोड़ेगा',
-                              'Click "Hire" and admin will connect you with the candidate')}
+                          {hi('इंटरव्यू शेड्यूल करें इस उम्मीदवार से जुड़ने के लिए',
+                              'Schedule an interview to connect with this candidate')}
                         </p>
                       </div>
                     </div>
@@ -220,6 +254,15 @@ export const EmployerJobApplications: React.FC = () => {
                           {hi('हायर करें / Interview', 'Hire / Interview')}
                         </Button>
                         <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSchedulingAppId(app.id)}
+                          disabled={credits === 0}
+                        >
+                          <CalendarPlus size={16} className="mr-1" />
+                          {hi('इंटरव्यू', 'Schedule Interview')}
+                        </Button>
+                        <Button
                           variant="danger"
                           size="sm"
                           onClick={() => handleStatusChange(app.id, 'rejected')}
@@ -228,14 +271,43 @@ export const EmployerJobApplications: React.FC = () => {
                         </Button>
                       </>
                     )}
+                    {app.status !== 'shortlisted' && app.status !== 'hired' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSchedulingAppId(app.id)}
+                        disabled={credits === 0}
+                      >
+                        <CalendarPlus size={16} className="mr-1" />
+                        {hi('इंटरव्यू शेड्यूल', 'Schedule Interview')}
+                      </Button>
+                    )}
                     {app.status === 'hired' && (
                       <div className="w-full text-center py-3 bg-green-50 rounded-lg border border-green-200">
                         <p className="text-green-700 font-semibold">
-                          ✅ {hi('चयनित — एडमिन जल्द संपर्क करवाएगा', 'Hired — Admin will connect you soon')}
+                          {hi('चयनित — एडमिन जल्द संपर्क करवाएगा', 'Hired — Admin will connect you soon')}
                         </p>
                       </div>
                     )}
                   </div>
+
+                  {/* Interview Scheduler Modal */}
+                  {schedulingAppId === app.id && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+                      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <InterviewScheduler
+                          applicationId={app.id}
+                          workerName={wp.full_name || 'Candidate'}
+                          jobTitle={`Job #${jobId}`}
+                          onScheduled={() => {
+                            setSchedulingAppId(null);
+                            loadCredits();
+                            loadApplications();
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   <p className="text-xs text-gray-400 mt-2">
                     {hi('आवेदन', 'Applied')}: {new Date(app.created_at).toLocaleDateString()}

@@ -18,6 +18,14 @@ import { NotificationService } from './services/notification.service';
 import { initializeFirebase } from './services/firebase.service';
 import firebaseAuthRouter from './routes/firebase-auth';
 import connectionsRouter from './routes/connections';
+import publicRoutes from './routes/public';
+import paymentRoutes from './routes/payments';
+import interviewRoutes from './routes/interviews';
+import subscriptionRoutes from './routes/subscriptions';
+import jobAlertRoutes from './routes/jobAlerts';
+import salaryInsightsRoutes from './routes/salaryInsights';
+import { shouldAutoApprove, calculateTrustScore } from './utils/trustScore';
+import { calculateMatchScore } from './utils/matchScore';
 
 const app: Express = express();
 
@@ -64,6 +72,14 @@ app.use('/api/firebase-auth', firebaseAuthRouter);
 
 // Connections (admin-moderated contact sharing)
 app.use('/api/connections', connectionsRouter);
+
+// New feature routes
+app.use('/api/public', publicRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/interviews', interviewRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/job-alerts', jobAlertRoutes);
+app.use('/api/public', salaryInsightsRoutes);
 
 // Send OTP
 app.post('/api/auth/send-otp', async (req: Request, res: Response) => {
@@ -735,10 +751,10 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
       return ApiResponseUtil.error(res, 'You have already applied to this job', 409);
     }
 
-    // Get job details to find employer_id
+    // Get job details to find employer_id and title
     const { data: jobData } = await supabase
       .from('jobs')
-      .select('employer_id')
+      .select('employer_id, title')
       .eq('id', jobId)
       .single();
 
@@ -753,31 +769,16 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
 
     console.log(`✅ Application created: ${applicationData.id}`);
 
-    // AUTO-CREATE CONNECTION REQUEST when worker applies
+    // Notify employer about new application
     if (jobData?.employer_id) {
-      // Check if connection already exists for this specific application
-      const { data: existingConnection } = await supabase
-        .from('connections')
-        .select('id, status')
-        .eq('application_id', applicationData.id)
-        .maybeSingle();
-
-      if (!existingConnection) {
-        const { error: connError } = await supabase.from('connections').insert({
-          application_id: applicationData.id,
-          worker_id: req.user!.userId,
-          employer_id: jobData.employer_id,
-          status: 'pending'
-        });
-
-        if (connError) {
-          console.error(`❌ Failed to create connection request:`, connError);
-        } else {
-          console.log(`✅ Auto-created connection request: worker=${req.user!.userId}, employer=${jobData.employer_id}, job=${jobId}`);
-        }
-      } else {
-        console.log(`📌 Connection already exists for this application with status: ${existingConnection.status}`);
-      }
+      await NotificationService.create(
+        jobData.employer_id,
+        'new_application',
+        'New Application Received',
+        `New application received for ${jobData.title || 'your job posting'}`,
+        undefined,
+        { job_id: jobId, application_id: applicationData.id }
+      );
     }
 
     // Update application limit counter
@@ -796,6 +797,66 @@ app.post('/api/workers/jobs/:jobId/apply', authenticate, authorize('worker'), as
     }
 
     return ApiResponseUtil.created(res, { message: 'Application submitted' });
+  } catch (error: any) {
+    return ApiResponseUtil.error(res, error.message);
+  }
+});
+
+// Get Recommended Jobs for Worker
+app.get('/api/workers/jobs/recommended', authenticate, authorize('worker'), async (req: Request, res: Response) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = +page;
+    const limitNum = +limit;
+
+    // Get worker profile
+    const { data: workerProfile } = await supabase
+      .from('worker_profiles')
+      .select('skills, city, state, experience_years, minimum_salary, expected_salary')
+      .eq('user_id', req.user!.userId)
+      .single();
+
+    if (!workerProfile) {
+      return ApiResponseUtil.error(res, 'Worker profile not found');
+    }
+
+    // Fetch open jobs
+    const { data: jobs, error } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('status', 'open');
+
+    if (error) throw error;
+
+    if (!jobs || jobs.length === 0) {
+      return ApiResponseUtil.paginated(res, [], pageNum, limitNum, 0);
+    }
+
+    // Calculate match scores and sort
+    const scoredJobs = jobs.map(job => ({
+      ...job,
+      match_score: calculateMatchScore(workerProfile, job),
+    }));
+
+    scoredJobs.sort((a, b) => b.match_score - a.match_score);
+
+    // Paginate
+    const start = (pageNum - 1) * limitNum;
+    const paginatedJobs = scoredJobs.slice(start, start + limitNum);
+
+    // Attach employer info
+    const employerIds = [...new Set(paginatedJobs.map(j => j.employer_id))];
+    const { data: employers } = await supabase
+      .from('employer_profiles')
+      .select('user_id, business_name, average_rating')
+      .in('user_id', employerIds);
+
+    const jobsWithEmployers = paginatedJobs.map(job => ({
+      ...job,
+      employer: employers?.find(e => e.user_id === job.employer_id) || null,
+    }));
+
+    return ApiResponseUtil.paginated(res, jobsWithEmployers, pageNum, limitNum, scoredJobs.length);
   } catch (error: any) {
     return ApiResponseUtil.error(res, error.message);
   }
@@ -991,13 +1052,26 @@ app.put('/api/employers/profile', authenticate, authorize('employer'), async (re
   }
 });
 
-// Create Job — ALL jobs go to admin for approval first (status: draft)
+// Create Job — auto-approve for verified employers with auto_approve_jobs, otherwise draft
 app.post('/api/employers/jobs', authenticate, authorize('employer'), async (req: Request, res: Response) => {
   try {
+    let jobStatus = 'draft';
+
+    // Check if employer is verified and has auto_approve_jobs enabled
+    const { data: employerProfile } = await supabase
+      .from('employer_profiles')
+      .select('verification_status, auto_approve_jobs')
+      .eq('user_id', req.user!.userId)
+      .single();
+
+    if (employerProfile?.verification_status === 'approved' && employerProfile?.auto_approve_jobs === true) {
+      jobStatus = 'open';
+    }
+
     const jobData = {
       ...req.body,
       employer_id: req.user!.userId,
-      status: 'draft',
+      status: jobStatus,
     };
 
     const { data, error } = await supabase
@@ -1008,7 +1082,7 @@ app.post('/api/employers/jobs', authenticate, authorize('employer'), async (req:
 
     if (error) throw error;
 
-    console.log(`✅ Job created: ${data.id}, status: draft (pending admin approval)`);
+    console.log(`✅ Job created: ${data.id}, status: ${jobStatus}${jobStatus === 'open' ? ' (auto-approved)' : ' (pending admin approval)'}`);
 
     return ApiResponseUtil.created(res, data);
   } catch (error: any) {
@@ -1077,29 +1151,26 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
   try {
     const { jobId } = req.params;
 
-    // Get applications - only show shortlisted (admin approved) or hired
+    // Get applications - show all except rejected and withdrawn
     const { data: apps, error } = await supabase
       .from('applications')
       .select('*')
       .eq('job_id', jobId)
-      .in('status', ['shortlisted', 'hired'])
+      .not('status', 'in', '("rejected","withdrawn")')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // Get worker profiles + user phone for these applications
+    // Get worker profiles (NO phone/contact details — contact unlock requires interview credits)
     if (apps && apps.length > 0) {
       const workerIds = [...new Set(apps.map(a => a.worker_id))];
-      const [{ data: workers }, { data: users }] = await Promise.all([
-        supabase.from('worker_profiles')
-          .select('user_id, full_name, city, state, skills, experience_years, photo_url, bio, address, pincode, minimum_salary, joining_days, verification_status')
-          .in('user_id', workerIds),
-        supabase.from('users').select('id, phone').in('id', workerIds),
-      ]);
+      const { data: workers } = await supabase
+        .from('worker_profiles')
+        .select('user_id, full_name, city, state, skills, experience_years, photo_url, bio, minimum_salary, joining_days, verification_status')
+        .in('user_id', workerIds);
 
       const enriched = apps.map(app => {
         const wp = workers?.find(w => w.user_id === app.worker_id);
-        const u = users?.find(u => u.id === app.worker_id);
         const name = wp?.full_name && wp.full_name.trim() !== '' ? wp.full_name : 'Candidate';
         return {
           ...app,
@@ -1111,11 +1182,10 @@ app.get('/api/employers/jobs/:jobId/applications', authenticate, authorize('empl
             experience_years: wp?.experience_years || 0,
             photo_url: wp?.photo_url || null,
             bio: wp?.bio || '',
-            address: wp?.address || '',
             minimum_salary: wp?.minimum_salary || null,
             joining_days: wp?.joining_days || null,
             verification_status: wp?.verification_status || 'pending',
-            // NOTE: phone/email/resume NOT included — admin connects them
+            // NOTE: phone/email/resume/address NOT included — contact unlock requires interview credits
           },
         };
       });

@@ -42,7 +42,11 @@ import { AdminAllJobs } from './pages/AdminAllJobs';
 import { JobAlerts } from './pages/JobAlerts';
 import { BrowseWorkers } from './pages/BrowseWorkers';
 import { AdminConnections } from './pages/AdminConnections';
+import { PublicJobsPage } from './pages/PublicJobsPage';
+import { EmployerPricingPage } from './pages/EmployerPricingPage';
+import { EmployerInterviewsPage } from './pages/EmployerInterviewsPage';
 import { BottomNav } from './components/BottomNav';
+import PWAInstallPrompt from './components/shared/PWAInstallPrompt';
 
 const App: React.FC = () => {
   const { token, user, loading, setLoading, setUser, logout } = useAuthStore();
@@ -199,6 +203,7 @@ const App: React.FC = () => {
           },
         }}
       />
+      <PWAInstallPrompt />
       <Routes>
         <Route path="/" element={<LandingPage />} />
       <Route path="/language" element={<LanguageSelection />} />
@@ -206,6 +211,8 @@ const App: React.FC = () => {
       <Route path="/auth/phone" element={<PhoneAuth />} />
       <Route path="/auth/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/role-select" element={<RoleSelection />} />
+
+      <Route path="/jobs" element={<PublicJobsPage />} />
 
       <Route path="/employer/signup" element={<EmployerSignup />} />
       <Route path="/employer/verification-pending" element={<VerificationPending />} />
@@ -222,6 +229,8 @@ const App: React.FC = () => {
         <Route path="/employer/templates" element={<JobTemplates />} />
         <Route path="/employer/referrals" element={<ReferralDashboard />} />
         <Route path="/employer/workers/:workerId" element={<PublicWorkerProfile />} />
+        <Route path="/employer/pricing" element={<EmployerPricingPage />} />
+        <Route path="/employer/interviews" element={<EmployerInterviewsPage />} />
       </Route>
 
       <Route path="/worker/signup" element={<WorkerSignup />} />

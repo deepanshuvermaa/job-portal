@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../components/shared/Card';
 import { Button } from '../components/shared/Button';
-import { getWorkerProfile, updateWorkerProfile } from '../services/profiles';
+import { api } from '../services/api';
+import { getWorkerProfile } from '../services/profiles';
 import { JOB_CATEGORIES } from '../utils/constants';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, X } from 'lucide-react';
+import CityAutocomplete from '../components/shared/CityAutocomplete';
+import toast from 'react-hot-toast';
 
 export const JobAlerts: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -14,7 +17,7 @@ export const JobAlerts: React.FC = () => {
   // Alert preferences
   const [alertsEnabled, setAlertsEnabled] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [preferredCities, setPreferredCities] = useState('');
+  const [preferredCities, setPreferredCities] = useState<string[]>([]);
   const [minSalary, setMinSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
 
@@ -25,16 +28,27 @@ export const JobAlerts: React.FC = () => {
   const loadPreferences = async () => {
     setLoading(true);
     try {
-      const profile = await getWorkerProfile();
-
-      // For now, we'll use the profile's existing data as preferences
-      // In a full implementation, this would come from a separate alerts table
-      if (profile) {
-        setSelectedCategories(profile.skills || []);
-        setPreferredCities(profile.city || '');
+      // Try to load from dedicated job-alerts endpoint
+      const { data } = await api.get('/api/job-alerts/preferences');
+      const prefs = data.data || data;
+      if (prefs) {
+        setAlertsEnabled(prefs.enabled ?? true);
+        setSelectedCategories(prefs.categories || []);
+        setPreferredCities(prefs.cities || []);
+        setMinSalary(prefs.min_salary?.toString() || '');
+        setMaxSalary(prefs.max_salary?.toString() || '');
       }
-    } catch (err: any) {
-      setError('Failed to load preferences');
+    } catch {
+      // Fallback: load from worker profile
+      try {
+        const profile = await getWorkerProfile();
+        if (profile) {
+          setSelectedCategories(profile.skills || []);
+          setPreferredCities(profile.city ? [profile.city] : []);
+        }
+      } catch (err: any) {
+        setError('Failed to load preferences');
+      }
     } finally {
       setLoading(false);
     }
@@ -48,21 +62,36 @@ export const JobAlerts: React.FC = () => {
     );
   };
 
+  const handleAddCity = (city: string) => {
+    if (city && !preferredCities.includes(city)) {
+      setPreferredCities(prev => [...prev, city]);
+    }
+  };
+
+  const handleRemoveCity = (city: string) => {
+    setPreferredCities(prev => prev.filter(c => c !== city));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError('');
     setSuccess(false);
 
     try {
-      // Note: This is a UI-only implementation
-      // Backend API for job alerts preferences doesn't exist yet
-      // This would need a new endpoint like POST /api/workers/alert-preferences
+      await api.put('/api/job-alerts/preferences', {
+        enabled: alertsEnabled,
+        categories: selectedCategories,
+        cities: preferredCities,
+        min_salary: minSalary ? parseInt(minSalary) : null,
+        max_salary: maxSalary ? parseInt(maxSalary) : null,
+      });
 
-      // For now, just show success message
       setSuccess(true);
+      toast.success('Preferences saved successfully!');
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
       setError('Failed to save preferences');
+      toast.error('Failed to save preferences');
     } finally {
       setSaving(false);
     }
@@ -109,13 +138,6 @@ export const JobAlerts: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-800">
-            <strong>Note:</strong> Job alerts feature is currently in development.
-            Preferences saved here will be used once the backend API is implemented.
-          </p>
-        </div>
-
         <Card>
           <h2 className="text-xl font-semibold text-gray-900 mb-4">
             Notification Preferences
@@ -149,16 +171,35 @@ export const JobAlerts: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Preferred Cities (comma-separated)
+                Preferred Cities
               </label>
-              <input
-                type="text"
-                value={preferredCities}
-                onChange={(e) => setPreferredCities(e.target.value)}
-                disabled={!alertsEnabled}
-                placeholder="Mumbai, Delhi, Bangalore"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50"
-              />
+              {preferredCities.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {preferredCities.map(city => (
+                    <span
+                      key={city}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 text-sm rounded-full"
+                    >
+                      {city}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCity(city)}
+                        disabled={!alertsEnabled}
+                        className="hover:text-primary-900 disabled:opacity-50"
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className={!alertsEnabled ? 'opacity-50 pointer-events-none' : ''}>
+                <CityAutocomplete
+                  value=""
+                  onChange={handleAddCity}
+                  placeholder="Search and add cities..."
+                />
+              </div>
             </div>
 
             <div>
